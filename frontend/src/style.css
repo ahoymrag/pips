@@ -41,16 +41,15 @@ canvas {
 
 /* === Panel Base - Soft anime glassmorphism === */
 .panel {
-  background: rgba(255, 248, 245, 0.88);
-  color: #4a3a3a;
-  border-radius: 16px;
-  padding: 16px;
-  border: 1px solid rgba(255, 200, 200, 0.3);
-  backdrop-filter: blur(12px);
+  background: linear-gradient(180deg, rgba(25, 32, 46, 0.68), rgba(17, 23, 35, 0.75));
+  color: #dbe6ff;
+  border-radius: 14px;
+  padding: 12px;
+  border: 1px solid rgba(150, 180, 230, 0.22);
+  backdrop-filter: blur(8px);
   box-shadow:
-    0 4px 24px rgba(180, 140, 160, 0.15),
-    0 1px 3px rgba(180, 140, 160, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+    0 8px 28px rgba(8, 12, 20, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* === Pip Overlay (top-right) === */
@@ -171,10 +170,11 @@ canvas {
 /* === Controls Panel === */
 .controls-panel {
   position: fixed;
-  bottom: 18px;
-  left: 16px;
+  top: 80px;
+  left: 12px;
   z-index: 10;
-  min-width: 200px;
+  min-width: 190px;
+  max-width: 220px;
   padding: 12px;
 }
 
@@ -184,7 +184,13 @@ canvas {
   text-transform: uppercase;
   letter-spacing: 0.8px;
   margin-bottom: 8px;
-  color: #6a4a5a;
+  color: #c6d7ff;
+}
+
+.game-panel {
+  box-shadow:
+    0 10px 26px rgba(5, 10, 18, 0.55),
+    inset 0 0 0 1px rgba(180, 210, 255, 0.08);
 }
 
 .mode-chips {
@@ -194,20 +200,20 @@ canvas {
 }
 
 .mode-chip {
-  border: 1px solid rgba(120, 100, 110, 0.3);
-  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(145, 175, 220, 0.32);
+  background: rgba(20, 28, 42, 0.72);
   border-radius: 999px;
   padding: 4px 8px;
   font-size: 11px;
-  color: #5a4858;
+  color: #c9dcff;
   cursor: pointer;
   font-family: inherit;
 }
 
 .mode-chip.active {
-  background: linear-gradient(135deg, rgba(170, 220, 180, 0.55), rgba(140, 200, 160, 0.45));
-  color: #2f6444;
-  border-color: rgba(70, 130, 90, 0.4);
+  background: linear-gradient(135deg, rgba(120, 198, 255, 0.42), rgba(114, 146, 255, 0.34));
+  color: #eef7ff;
+  border-color: rgba(133, 186, 255, 0.62);
 }
 
 .wasd-grid {
@@ -224,12 +230,12 @@ canvas {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  border: 1px solid rgba(120, 100, 110, 0.35);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(232, 224, 232, 0.85));
+  border: 1px solid rgba(148, 174, 215, 0.32);
+  background: linear-gradient(180deg, rgba(44, 56, 79, 0.9), rgba(34, 44, 66, 0.92));
   box-shadow:
     inset 0 -2px 0 rgba(120, 100, 110, 0.2),
     0 1px 3px rgba(0, 0, 0, 0.08);
-  color: #4a3a4a;
+  color: #d5e5ff;
   font-size: 12px;
   font-weight: 700;
 }
@@ -265,7 +271,7 @@ canvas {
   display: flex;
   align-items: center;
   font-size: 12px;
-  color: #5a4858;
+  color: #b9cbed;
   margin-top: 6px;
 }
 
@@ -284,11 +290,11 @@ canvas {
   display: flex;
   align-items: center;
   font-size: 12px;
-  color: #5a4858;
+  color: #b9cbed;
 }
 
 .behavior-row.active {
-  color: #3f7a54;
+  color: #8fd7ff;
   font-weight: 700;
 }
 
@@ -301,8 +307,8 @@ canvas {
 .last-action {
   margin-top: 10px;
   font-size: 11px;
-  color: #6a4a5a;
-  border-top: 1px solid rgba(120, 100, 110, 0.2);
+  color: #b7c7e8;
+  border-top: 1px solid rgba(145, 176, 215, 0.2);
   padding-top: 8px;
 }
 
@@ -310,21 +316,39 @@ canvas {
   opacity: 0.65;
 }
 
+.status-chip {
+  display: inline-flex;
+  margin-top: 2px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(146, 184, 225, 0.35);
+  background: rgba(37, 50, 74, 0.7);
+  color: #e7f1ff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-meta {
+  margin-top: 5px;
+  font-size: 11px;
+  color: #9fb3d6;
+}
+
 .roster-dock {
   position: fixed;
   left: 50%;
-  bottom: 14px;
+  bottom: 8px;
   transform: translateX(-50%);
   z-index: 10;
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 
 .insights-panel {
   position: fixed;
   top: 16px;
-  right: 318px;
+  right: 10px;
   z-index: 10;
-  width: 250px;
+  width: 230px;
   padding: 12px;
 }
 
@@ -341,14 +365,14 @@ canvas {
   display: flex;
   justify-content: space-between;
   font-size: 11px;
-  color: #5b4757;
+  color: #bdd0f1;
   margin-bottom: 4px;
 }
 
 .trend-track {
   height: 7px;
   border-radius: 999px;
-  background: rgba(120, 100, 110, 0.16);
+  background: rgba(126, 155, 196, 0.22);
   overflow: hidden;
 }
 
@@ -364,11 +388,11 @@ canvas {
   width: 100%;
   height: 130px;
   border-radius: 10px;
-  border: 1px solid rgba(120, 100, 110, 0.28);
+  border: 1px solid rgba(133, 164, 205, 0.32);
   background:
     repeating-linear-gradient(0deg, rgba(110, 145, 110, 0.12), rgba(110, 145, 110, 0.12) 1px, transparent 1px, transparent 10px),
     repeating-linear-gradient(90deg, rgba(110, 145, 110, 0.12), rgba(110, 145, 110, 0.12) 1px, transparent 1px, transparent 10px),
-    rgba(235, 246, 230, 0.65);
+    rgba(18, 28, 43, 0.68);
 }
 
 .mini-dot {
@@ -399,16 +423,16 @@ canvas {
 
 .roster-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .roster-slot {
-  min-width: 118px;
-  height: 58px;
-  border-radius: 10px;
-  border: 1px solid rgba(120, 100, 110, 0.28);
-  background: rgba(255, 255, 255, 0.72);
-  color: #59485a;
+  min-width: 108px;
+  height: 50px;
+  border-radius: 8px;
+  border: 1px solid rgba(132, 161, 201, 0.34);
+  background: linear-gradient(180deg, rgba(34, 46, 68, 0.92), rgba(26, 35, 52, 0.92));
+  color: #d6e6ff;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -418,8 +442,8 @@ canvas {
 }
 
 .roster-slot.active {
-  border-color: rgba(80, 140, 95, 0.5);
-  box-shadow: 0 0 0 2px rgba(120, 185, 135, 0.22);
+  border-color: rgba(133, 198, 255, 0.78);
+  box-shadow: 0 0 0 2px rgba(133, 198, 255, 0.28);
 }
 
 .slot-key {
@@ -438,7 +462,7 @@ canvas {
 
 .slot-empty {
   font-size: 10px;
-  opacity: 0.5;
+  opacity: 0.65;
 }
 
 /* === Scrollbar === */

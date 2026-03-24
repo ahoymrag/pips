@@ -108,8 +108,8 @@ function mapPercentY(z) {
   <PipOverlay @focus-chat="focusChat" />
   <ChatWindow ref="chatWindow" />
   <CouncilButton />
-  <div class="controls-panel panel">
-    <div class="controls-title">Mode</div>
+  <div class="controls-panel panel game-panel">
+    <div class="controls-title">HUD</div>
     <div class="mode-chips">
       <button
         v-for="mode in modeDefinitions"
@@ -122,7 +122,7 @@ function mapPercentY(z) {
       </button>
     </div>
 
-    <div class="controls-title behavior-title">Movement</div>
+    <div class="controls-title behavior-title">Controls</div>
     <div class="wasd-grid">
       <span class="keycap key-w">W</span>
       <span class="keycap key-a">A</span>
@@ -130,22 +130,21 @@ function mapPercentY(z) {
       <span class="keycap key-d">D</span>
     </div>
     <div class="control-line"><span class="keycap key-wide">Shift</span> Sprint</div>
-    <div class="control-line"><span class="keycap key-wide">Click</span> Select agent</div>
-    <div class="control-line"><span class="keycap key-wide">RMB</span> Hold to look</div>
-    <div class="control-line"><span class="keycap key-wide">1-6</span> Jump glades</div>
-    <div class="control-line"><span class="keycap key-wide">Tab</span> Cycle mode</div>
+    <div class="control-line"><span class="keycap key-wide">Click</span> Select</div>
+    <div class="control-line"><span class="keycap key-wide">RMB</span> Look</div>
+    <div class="control-line"><span class="keycap key-wide">1-6</span> Jump</div>
+    <div class="control-line"><span class="keycap key-wide">Tab</span> Modes</div>
 
     <template v-if="currentMode === 'explore'">
       <div class="controls-title behavior-title">Explore</div>
-      <div class="control-line">{{ activeGlade?.name }} · {{ activeGlade?.theme }}</div>
-      <div class="control-line">Project: {{ activeGlade?.project }}</div>
-      <div class="control-line">Roam and check how this garden grows.</div>
+      <div class="status-chip">{{ activeGlade?.name }}</div>
+      <div class="status-meta">{{ activeGlade?.theme }} · {{ activeGlade?.project }}</div>
     </template>
 
     <template v-else-if="currentMode === 'build'">
       <div class="controls-title behavior-title">Build</div>
       <div class="control-line"><span class="keycap key-wide">B</span> Toggle build</div>
-      <div class="control-line">Click in farm zone to place blocks</div>
+      <div class="control-line">Click in district zone to place</div>
       <div class="controls-title behavior-title">Farm Tools</div>
       <div class="behavior-list">
         <div
@@ -160,10 +159,9 @@ function mapPercentY(z) {
       </div>
       <div class="last-action">
         Tool: <strong>{{ selectedTool }}</strong><br />
-        Capacity: <strong>{{ farmStats.capacity }}</strong> |
+        Cap: <strong>{{ farmStats.capacity }}</strong> ·
         Growth: <strong>x{{ farmStats.growthRate.toFixed(2) }}</strong><br />
-        Next pip: <strong>{{ Math.ceil(farmStats.nextSpawnIn) }}s</strong><br />
-        Scale: <strong>1 block = 1 meter</strong>
+        Next spawn: <strong>{{ Math.ceil(farmStats.nextSpawnIn) }}s</strong>
       </div>
       <div class="last-action" v-if="farmSpawnNotice">{{ farmSpawnNotice }}</div>
     </template>
@@ -172,13 +170,12 @@ function mapPercentY(z) {
       <div class="controls-title behavior-title">Playful</div>
       <div class="control-line"><span class="keycap key-wide">Space</span> Rise</div>
       <div class="control-line"><span class="keycap key-wide">Ctrl</span> Dive</div>
-      <div class="control-line"><span class="keycap key-wide">Shift</span> Boost glide</div>
-      <div class="control-line">Try swooping over mountains and farm.</div>
-      <div class="last-action">Nintendo-feel mode: floaty speed, air control, gentle camera lean.</div>
+      <div class="control-line"><span class="keycap key-wide">Shift</span> Boost</div>
+      <div class="last-action">Arcade flight tuning enabled.</div>
     </template>
   </div>
-  <div class="insights-panel panel">
-    <div class="controls-title">Glade Growth</div>
+  <div class="insights-panel panel game-panel">
+    <div class="controls-title">District Intel</div>
     <div
       v-for="row in gladeTrendRows"
       :key="row.id"
@@ -193,7 +190,7 @@ function mapPercentY(z) {
         <div class="trend-fill" :style="{ width: `${Math.round(row.score * 100)}%`, backgroundColor: row.color }"></div>
       </div>
     </div>
-    <div class="controls-title" style="margin-top: 10px;">Minimap</div>
+    <div class="controls-title" style="margin-top: 10px;">Map</div>
     <div class="mini-map">
       <button
         v-for="g in gladeSlots"
@@ -211,8 +208,8 @@ function mapPercentY(z) {
     </div>
   </div>
 
-  <div class="roster-dock panel">
-    <div class="controls-title" style="margin-bottom: 6px;">Glade Dock (1-6)</div>
+  <div class="roster-dock panel game-panel">
+    <div class="controls-title" style="margin-bottom: 6px;">District Dock</div>
     <div class="roster-row">
       <button
         v-for="(glade, idx) in gladeSlots"
