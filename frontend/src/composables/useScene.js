@@ -239,7 +239,7 @@ export function useScene() {
     updateActiveFarmStats()
   }
 
-  function spawnDynamicGlade(name, themeStr) {
+  function spawnDynamicGlade(name, themeStr, provider = 'glade', model = 'native') {
     const gladeCount = gladeSlots.value.length
     const radius = 160 + (gladeCount * 10)
     const angle = gladeCount * 1.3
@@ -257,7 +257,7 @@ export function useScene() {
     
     const newId = 'glade-dyn-' + Date.now()
     const newGlade = createGlade(newId, name || 'New Project', 'custom', themeStr || 'Default', color, { x, z }, [
-       makePip('Planner', '#ffffff', x - 2, z - 2, 'Eager to organize.', newId),
+       makePip('Planner', '#ffffff', x - 2, z - 2, 'Eager to organize.', newId, provider, model),
     ])
     
     gladeSlots.value.push(newGlade)
@@ -366,14 +366,14 @@ function createGlade(id, name, project, theme, color, center, gladePips) {
   }
 }
 
-function makePip(name, color, x, z, personality, gladeId) {
+function makePip(name, color, x, z, personality, gladeId, provider = 'glade', model = 'native') {
   return {
     id: `pip-${name.toLowerCase()}-${Math.random().toString(16).slice(2, 6)}`,
     name,
     color,
     personality,
-    provider: 'glade',
-    model: 'native',
+    provider,
+    model,
     status: 'idle',
     position_x: x,
     position_z: z,

@@ -32,6 +32,8 @@ const chatWindow = ref(null)
 const introVisible = ref(true)
 const wizardName = ref('')
 const wizardTheme = ref('Default')
+const wizardProvider = ref('ollama')
+const wizardModel = ref('claude-3-opus-20240229')
 const WORLD_SIZE = 260
 const WORLD_HALF = WORLD_SIZE / 2
 
@@ -190,7 +192,19 @@ function mapPercentY(z) {
            <option value="Cinema Land">Cinema Theme</option>
            <option value="Magic Land">Magic Theme</option>
         </select>
-        <button class="chat-send" style="width: 100%; border-radius: 4px;" @click="spawnDynamicGlade(wizardName, wizardTheme)">Spawn Project</button>
+        
+        <label style="font-size: 11px; margin-top: 4px; color: #b9cbed;">Agent Provider:</label>
+        <select v-model="wizardProvider" class="chat-input" style="width: 100%; border-radius: 4px; padding: 4px; cursor: pointer;">
+           <option value="anthropic">Anthropic (Claude)</option>
+           <option value="openai">OpenAI (GPT-4)</option>
+           <option value="ollama">Ollama (Local)</option>
+           <option value="glade">Glade (Mock)</option>
+        </select>
+
+        <label style="font-size: 11px; margin-top: 2px; color: #b9cbed;">Model Name:</label>
+        <input v-model="wizardModel" type="text" placeholder="claude-3-opus-20240229" class="chat-input" style="width: 100%; border-radius: 4px;" />
+
+        <button class="chat-send" style="width: 100%; border-radius: 4px; margin-top: 8px;" @click="spawnDynamicGlade(wizardName, wizardTheme, wizardProvider, wizardModel)">Spawn Project</button>
       </div>
     </template>
   </div>
