@@ -174,7 +174,8 @@ export function updateCamera(delta, options = {}) {
 function onMouseMove(e) {
   if (!lookDragActive || !camera) return
 
-  const sensitivity = 0.0018
+  // Higher = less physical mouse movement to turn (tighter FPS feel)
+  const sensitivity = 0.0031
   yaw -= e.movementX * sensitivity
   pitch -= e.movementY * sensitivity
   pitch = THREE.MathUtils.clamp(pitch, -Math.PI / 2.4, Math.PI / 2.4)

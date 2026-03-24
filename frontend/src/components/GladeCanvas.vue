@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import * as THREE from 'three'
 import { createTerrain } from '../three/terrain.js'
 import { createCamera, updateCamera, resizeCamera, cleanupCamera, getCamera, getIsLocked } from '../three/camera.js'
-import { createPipMeshes, syncPipMeshes, updatePipAnimations, getPipMeshMap } from '../three/pips.js'
+import { createPipMeshes, syncPipMeshes, updatePipAnimations, updatePipEyeTracking, getPipMeshMap } from '../three/pips.js'
 import { pickPip } from '../three/picking.js'
 import { updateGathering, isGathering } from '../three/gathering.js'
 import { useScene } from '../composables/useScene.js'
@@ -190,6 +190,7 @@ function animate() {
 
   updateCamera(delta, { mode: currentMode.value })
   updatePipAnimations(elapsed)
+  updatePipEyeTracking(camera)
 
   if (isGathering.value) {
     updateGathering(delta, getPipMeshMap())

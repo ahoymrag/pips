@@ -46,6 +46,48 @@ export function syncPipMeshes(pips, scene) {
   })
 }
 
+const _eyeWorld = new THREE.Vector3()
+const _toCam = new THREE.Vector3()
+const _invWorld = new THREE.Matrix4()
+
+export function updatePipEyeTracking(camera) {
+  if (!camera) return
+  for (const [, group] of pipMeshMap) {
+    const left = group.userData.leftPupil
+    const right = group.userData.rightPupil
+    const sl = group.userData.leftSparkle
+    const sr = group.userData.rightSparkle
+    const lb = group.userData.pupilBaseLeft
+    const rb = group.userData.pupilBaseRight
+    if (!left || !right || !lb || !rb) continue
+
+    group.updateMatrixWorld(true)
+    _eyeWorld.set(0, 0.08, 0.41)
+    _eyeWorld.applyMatrix4(group.matrixWorld)
+
+    _toCam.subVectors(camera.position, _eyeWorld).normalize()
+    _invWorld.copy(group.matrixWorld).invert()
+    _toCam.transformDirection(_invWorld)
+
+    const maxX = 0.052
+    const maxY = 0.038
+    const ox = THREE.MathUtils.clamp(_toCam.x * 0.14, -maxX, maxX)
+    const oy = THREE.MathUtils.clamp(_toCam.y * 0.11, -maxY, maxY)
+
+    left.position.set(lb.x + ox, lb.y + oy, lb.z)
+    right.position.set(rb.x + ox, rb.y + oy, rb.z)
+
+    if (sl && group.userData.sparkleBaseLeft) {
+      const b = group.userData.sparkleBaseLeft
+      sl.position.set(b.x + ox * 0.85, b.y + oy * 0.85, b.z)
+    }
+    if (sr && group.userData.sparkleBaseRight) {
+      const b = group.userData.sparkleBaseRight
+      sr.position.set(b.x + ox * 0.85, b.y + oy * 0.85, b.z)
+    }
+  }
+}
+
 export function updatePipAnimations(time) {
   let i = 0
   for (const [, group] of pipMeshMap) {
@@ -128,6 +170,11 @@ function buildPipGroup(pip, index) {
   rightPupil.position.set(0.15, 0.06, 0.44)
   group.add(rightPupil)
 
+  group.userData.leftPupil = leftPupil
+  group.userData.rightPupil = rightPupil
+  group.userData.pupilBaseLeft = leftPupil.position.clone()
+  group.userData.pupilBaseRight = rightPupil.position.clone()
+
   // Anime eye sparkle (small white reflection)
   const sparkleGeo = new THREE.BoxGeometry(0.05, 0.05, 0.02)
   const sparkleMat = new THREE.MeshLambertMaterial({
@@ -143,6 +190,11 @@ function buildPipGroup(pip, index) {
   const rightSparkle = new THREE.Mesh(sparkleGeo, sparkleMat)
   rightSparkle.position.set(0.2, 0.12, 0.47)
   group.add(rightSparkle)
+
+  group.userData.leftSparkle = leftSparkle
+  group.userData.rightSparkle = rightSparkle
+  group.userData.sparkleBaseLeft = leftSparkle.position.clone()
+  group.userData.sparkleBaseRight = rightSparkle.position.clone()
 
   // Blush cheeks (soft pink glow)
   const blushGeo = new THREE.BoxGeometry(0.12, 0.08, 0.05)
