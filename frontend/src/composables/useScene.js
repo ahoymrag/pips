@@ -28,6 +28,8 @@ const modeDefinitions = [
   { id: 'explore', key: 'F1', label: 'Explore' },
   { id: 'build', key: 'F2', label: 'Build' },
   { id: 'playful', key: 'F3', label: 'Playful' },
+  { id: 'wizard', key: 'F4', label: 'Wizard' },
+  { id: 'about', key: 'F5', label: 'About' },
 ]
 
 function clone(value) {
@@ -121,6 +123,10 @@ export function useScene() {
       ? 'Build mode enabled'
       : modeId === 'playful'
         ? 'Playful mode enabled'
+        : modeId === 'wizard'
+        ? 'Wizard mode enabled'
+        : modeId === 'about'
+        ? 'About mode enabled'
         : 'Explore mode enabled'
     return true
   }
@@ -233,6 +239,36 @@ export function useScene() {
     updateActiveFarmStats()
   }
 
+  function spawnDynamicGlade(name, themeStr) {
+    const gladeCount = gladeSlots.value.length
+    const radius = 160 + (gladeCount * 10)
+    const angle = gladeCount * 1.3
+    const x = Math.round(Math.cos(angle) * radius)
+    const z = Math.round(Math.sin(angle) * radius)
+    
+    const colors = {
+      'Cyber Land': '#63cdda',
+      'Media Land': '#f8a5c2',
+      'Cinema Land': '#f5cd79',
+      'Magic Land': '#d2b4de',
+      'Default': '#a8db92'
+    }
+    const color = colors[themeStr] || colors['Default']
+    
+    const newId = 'glade-dyn-' + Date.now()
+    const newGlade = createGlade(newId, name || 'New Project', 'custom', themeStr || 'Default', color, { x, z }, [
+       makePip('Planner', '#ffffff', x - 2, z - 2, 'Eager to organize.', newId),
+    ])
+    
+    gladeSlots.value.push(newGlade)
+    pips.value.push(...clone(newGlade.pips))
+    spawnTimersByGlade.value[newId] = 45
+    activeGladeId.value = newId
+    updateActiveFarmStats()
+    setMode('explore')
+    return newGlade
+  }
+
   return {
     selectedPip: readonly(selectedPip),
     pips,
@@ -268,6 +304,7 @@ export function useScene() {
     selectToolByKey,
     placeFarmBlock,
     tickFarm,
+    spawnDynamicGlade,
   }
 }
 
@@ -295,6 +332,18 @@ function seedGlades() {
     ]),
     createGlade('glade-wild', 'Wildcard Glade', 'experiments', 'Meadow Land', '#a8db92', { x: 0, z: 70 }, [
       makePip('Moss', '#84c677', 2, 68, 'Playful and experimental.', 'glade-wild'),
+    ]),
+    createGlade('glade-ahoy-media', 'Ahoy Indie Media', 'ahoy-media', 'Media Land', '#f8a5c2', { x: -120, z: 0 }, [
+      makePip('Director', '#f78fb3', -122, -2, 'Creative and visionary.', 'glade-ahoy-media'),
+      makePip('Editor', '#e77f98', -118, 5, 'Detail-oriented and focused.', 'glade-ahoy-media'),
+    ]),
+    createGlade('glade-cpc', 'CPC Web Admin', 'cpc', 'Cyber Land', '#63cdda', { x: 120, z: 0 }, [
+      makePip('SysAdmin', '#3dc1d3', 118, 3, 'Vigilant and precise.', 'glade-cpc'),
+      makePip('Dev', '#1e90ff', 123, -5, 'Logical and efficient.', 'glade-cpc'),
+    ]),
+    createGlade('glade-film', 'The Film Project', 'film', 'Cinema Land', '#f5cd79', { x: 0, z: 120 }, [
+      makePip('Writer', '#f19066', -3, 118, 'Imaginative and poetic.', 'glade-film'),
+      makePip('Producer', '#c44569', 4, 122, 'Driven and practical.', 'glade-film'),
     ]),
   ]
 }

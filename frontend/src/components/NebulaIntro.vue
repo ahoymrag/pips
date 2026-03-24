@@ -36,7 +36,6 @@ function animate(now) {
   }
 
   if (renderer && scene && camera) renderer.render(scene, camera)
-  if (t >= 1) finishIntro()
 }
 
 onMounted(() => {
@@ -110,8 +109,11 @@ onUnmounted(() => {
   <div class="intro-wrap">
     <div ref="container" class="intro-canvas"></div>
     <div class="intro-overlay">
-      <div class="intro-title">Entering The Glade Network</div>
-      <button class="intro-skip" @click="finishIntro">Skip</button>
+      <div class="intro-title">Welcome to The Glade Network</div>
+      <div class="intro-text">
+        Welcome to Pips, your interactive portfolio and project management universe, visualized as a lush, 3D environment. Here, your real-world projects—like Ahoy Indie Media and The Film Project—are represented as dynamic island worlds called Glades. Each Glade is inhabited by AI agents, or "Pips," dedicated to specific roles within your teams. You can oversee operations, brainstorm with agents, and build out your team's infrastructure all in real-time. Step into the vortex and watch your projects come to life!
+      </div>
+      <button class="intro-skip" @click="finishIntro">Enter Network</button>
     </div>
   </div>
 </template>
@@ -141,10 +143,21 @@ onUnmounted(() => {
 }
 
 .intro-title {
-  font-size: 18px;
+  font-size: 24px;
   color: #f6e9ff;
   text-shadow: 0 0 18px rgba(193, 133, 255, 0.7);
   margin-bottom: 12px;
+}
+
+.intro-text {
+  font-size: 15px;
+  color: #d8c8e8;
+  max-width: 620px;
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  text-shadow: 0 0 10px rgba(0,0,0,0.8);
+  pointer-events: auto;
 }
 
 .intro-skip {

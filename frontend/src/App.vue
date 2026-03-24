@@ -26,9 +26,12 @@ const {
   cycleMode,
   toggleBuildMode,
   selectToolByKey,
+  spawnDynamicGlade,
 } = useScene()
 const chatWindow = ref(null)
 const introVisible = ref(true)
+const wizardName = ref('')
+const wizardTheme = ref('Default')
 const WORLD_SIZE = 260
 const WORLD_HALF = WORLD_SIZE / 2
 
@@ -47,6 +50,7 @@ function onKeyDown(event) {
   if (event.code === 'F1') { setMode('explore'); return }
   if (event.code === 'F2') { setMode('build'); return }
   if (event.code === 'F3') { setMode('playful'); return }
+  if (event.code === 'F4') { setMode('wizard'); return }
   if (event.code === 'Tab') {
     event.preventDefault()
     cycleMode()
@@ -57,7 +61,7 @@ function onKeyDown(event) {
     return
   }
   const key = event.key
-  if (key < '1' || key > '6') return
+  if (key < '1' || key > '9') return
   if (buildMode.value && key <= '5') {
     selectToolByKey(key)
     return
@@ -132,7 +136,7 @@ function mapPercentY(z) {
     <div class="control-line"><span class="keycap key-wide">Shift</span> Sprint</div>
     <div class="control-line"><span class="keycap key-wide">Click</span> Select</div>
     <div class="control-line"><span class="keycap key-wide">RMB</span> Look</div>
-    <div class="control-line"><span class="keycap key-wide">1-6</span> Jump</div>
+    <div class="control-line"><span class="keycap key-wide">1-9</span> Jump</div>
     <div class="control-line"><span class="keycap key-wide">Tab</span> Modes</div>
 
     <template v-if="currentMode === 'explore'">
@@ -172,6 +176,22 @@ function mapPercentY(z) {
       <div class="control-line"><span class="keycap key-wide">Ctrl</span> Dive</div>
       <div class="control-line"><span class="keycap key-wide">Shift</span> Boost</div>
       <div class="last-action">Arcade flight tuning enabled.</div>
+    </template>
+
+    <template v-else-if="currentMode === 'wizard'">
+      <div class="controls-title behavior-title">Project Wizard</div>
+      <div class="control-line">Create a new Glade dynamically</div>
+      <div class="wizard-mockup" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+        <input v-model="wizardName" type="text" placeholder="Project Name" class="chat-input" style="width: 100%; border-radius: 4px;" />
+        <select v-model="wizardTheme" class="chat-input" style="width: 100%; border-radius: 4px; padding: 4px; cursor: pointer;">
+           <option value="Default">Meadow Theme</option>
+           <option value="Cyber Land">Cyber Theme</option>
+           <option value="Media Land">Media Theme</option>
+           <option value="Cinema Land">Cinema Theme</option>
+           <option value="Magic Land">Magic Theme</option>
+        </select>
+        <button class="chat-send" style="width: 100%; border-radius: 4px;" @click="spawnDynamicGlade(wizardName, wizardTheme)">Spawn Project</button>
+      </div>
     </template>
   </div>
   <div class="insights-panel panel game-panel">
@@ -224,5 +244,44 @@ function mapPercentY(z) {
       </button>
     </div>
   </div>
+
+  <div v-if="currentMode === 'about'" class="about-overlay panel game-panel">
+    <div class="about-content">
+      <h2 style="font-size: 24px; margin-bottom: 24px; color: #f6e9ff; text-shadow: 0 0 10px rgba(193,133,255,0.7);">How Pips Connects to Agents</h2>
+      <p>Pips serves as a visual 3D interface for your underlying AI processes and project management backends. Think of each <strong>"Pip"</strong> as a dedicated socket or API connection to an LLM running either locally or in the cloud.</p>
+      <p>When you interact with a Pip, Pips takes your input and sends a payload to the backend server. The backend passes the project context and your prompt to the specialized LLM agent assigned to that Pip (like an Editor, or SysAdmin) for processing.</p>
+      <p>The response is streamed back to the frontend and displayed as chat bubbles natively in the world. By distributing these agents into distinct <strong>"Glades"</strong>, Pips allows you to visually orchestrate and containerize the context of multiple agents operating simultaneously across your projects!</p>
+      <button class="council-btn" style="margin-top: 32px;" @click="setMode('explore')">Return to Network</button>
+    </div>
+  </div>
+
   <NebulaIntro v-if="introVisible" @done="onIntroDone" />
 </template>
+
+<style scoped>
+.about-overlay {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 650px;
+  z-index: 50;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(25, 32, 46, 0.96), rgba(17, 23, 35, 0.98));
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(180, 210, 255, 0.15);
+}
+.about-content p {
+  color: #d8c8e8;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+.about-content strong {
+  color: #f6e9ff;
+}
+</style>
