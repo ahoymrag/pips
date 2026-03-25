@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { trampolinePads } from './terrain.js'
 
 let camera = null
 let domEl = null
@@ -147,16 +148,48 @@ export function updateCamera(delta, options = {}) {
   camera.position.x = THREE.MathUtils.clamp(camera.position.x, -130, 130)
   camera.position.z = THREE.MathUtils.clamp(camera.position.z, -130, 130)
 
-  // Subtle head bob in grounded modes
+  // Gravity + trampoline bounce in grounded modes
   if (!playful) {
-    const isMoving = direction.lengthSq() > 0 && (keys.forward || keys.backward || keys.left || keys.right)
+    // Apply gravity
+    velocity.y -= 22 * delta
+
+    // Ground collision
+    if (camera.position.y + velocity.y * delta <= EYE_HEIGHT) {
+      // Check if we're on a trampoline
+      let onTrampoline = false
+      for (const pad of trampolinePads) {
+        const dx = camera.position.x - pad.x
+        const dz = camera.position.z - pad.z
+        if (dx * dx + dz * dz < pad.radius * pad.radius) {
+          onTrampoline = true
+          break
+        }
+      }
+
+      if (onTrampoline) {
+        // Bounce! Reverse and amplify vertical velocity
+        velocity.y = Math.max(12, Math.abs(velocity.y) * 1.1)
+      } else {
+        velocity.y = 0
+        camera.position.y = EYE_HEIGHT
+      }
+    }
+
+    camera.position.y += velocity.y * delta
+    if (camera.position.y < EYE_HEIGHT) camera.position.y = EYE_HEIGHT
+
+    // Head bob only when grounded
+    const grounded = camera.position.y <= EYE_HEIGHT + 0.01
+    const isMoving = grounded && direction.lengthSq() > 0 && (keys.forward || keys.backward || keys.left || keys.right)
     if (isMoving) {
       moveTime += delta * (keys.shift ? 14 : 10)
     } else {
-      moveTime *= 0.9 // Smooth stop
+      moveTime *= 0.9
     }
-    const bobAmount = Math.sin(moveTime) * 0.04 * (isMoving ? 1 : 0)
-    camera.position.y = EYE_HEIGHT + bobAmount
+    if (grounded) {
+      const bobAmount = Math.sin(moveTime) * 0.04 * (isMoving ? 1 : 0)
+      camera.position.y = Math.max(camera.position.y, EYE_HEIGHT + bobAmount)
+    }
   }
 
   // FOV tuning: stronger playful boost
