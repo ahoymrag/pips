@@ -4,7 +4,7 @@ const selectedPip = ref(null)
 const pips = ref([])
 const councilActive = ref(false)
 const chatOpen = ref(false)
-const currentMode = ref('explore')
+const currentMode = ref('playful')
 const selectedTool = ref('nest')
 const farmBlocks = ref([])
 const farmStats = ref(makeEmptyFarmStats())
@@ -20,7 +20,8 @@ const inventory = ref([
   { id: 'beret', label: 'Beret', icon: '🎨', type: 'hat', effect: 'personality' },
   { id: 'crown', label: 'Crown', icon: '👑', type: 'hat', effect: 'lead' },
   { id: 'pip_treat', label: 'Pip Treat', icon: '🍎', type: 'food', effect: 'exp' },
-  null, null, null // Empty slots
+  { id: 'balloon_cannon', label: 'Balloon Cannon', icon: '🔫', type: 'tool' },
+  null, null // Empty slots
 ])
 const selectedSlot = ref(0)
 const wildPips = ref([])
@@ -377,11 +378,30 @@ export function useScene() {
     }
     return false
   }
-   function feedPip(pipId) {
+  function feedPip(pipId) {
     const p = pips.value.find(p => p.id === pipId)
     if (p) {
       addPipExp(pipId, 50)
       if (onboardingStep.value === 3) onboardingStep.value = 4
+      return true
+    }
+    return false
+  }
+
+  function removePip(pipId) {
+    const idx = pips.value.findIndex(p => p.id === pipId)
+    if (idx !== -1) {
+      pips.value.splice(idx, 1)
+      return true
+    }
+    return false
+  }
+
+  function removeFarmBlock(blockId) {
+    const idx = farmBlocks.value.findIndex(b => b.id === blockId)
+    if (idx !== -1) {
+      farmBlocks.value.splice(idx, 1)
+      recomputeFarmStats()
       return true
     }
     return false
@@ -443,6 +463,8 @@ export function useScene() {
     guidePip,
     feedPip,
     nextOnboarding,
+    removePip,
+    removeFarmBlock,
   }
 }
 

@@ -36,6 +36,8 @@ const {
   selectedSlot,
   equipHat,
   feedPip,
+  removePip,
+  removeFarmBlock,
 } = useScene()
 
 let renderer = null
@@ -214,6 +216,53 @@ function createCaptureEffect(pos, color) {
   tick()
 }
 
+function createFireworkEffect(pos, color) {
+  const group = new THREE.Group()
+  const particles = 24
+  for (let i = 0; i < particles; i++) {
+    const p = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 6, 6),
+      new THREE.MeshLambertMaterial({ 
+        color, 
+        emissive: color, 
+        emissiveIntensity: 1.5,
+        transparent: true
+      })
+    )
+    const angle = (i / particles) * Math.PI * 2
+    const inclination = (Math.random() - 0.5) * Math.PI
+    const speed = 0.15 + Math.random() * 0.2
+    p.userData.vel = new THREE.Vector3(
+      Math.cos(angle) * Math.cos(inclination),
+      Math.sin(inclination),
+      Math.sin(angle) * Math.cos(inclination)
+    ).multiplyScalar(speed)
+    group.add(p)
+  }
+  group.position.copy(pos)
+  scene.add(group)
+  
+  const startTime = clock.getElapsedTime()
+  const duration = 1.2
+  
+  const tick = () => {
+    const age = clock.getElapsedTime() - startTime
+    if (age > duration) {
+      scene.remove(group)
+      return
+    }
+    group.children.forEach(p => {
+      p.position.add(p.userData.vel)
+      p.userData.vel.multiplyScalar(0.96) // Drag
+      p.userData.vel.y -= 0.005 // Gravity
+      p.scale.multiplyScalar(0.97)
+      p.material.opacity = 1 - (age / duration)
+    })
+    requestAnimationFrame(tick)
+  }
+  tick()
+}
+
 function throwPokeball(event) {
   if (!camera || !scene) return
   
@@ -240,39 +289,63 @@ function throwPokeball(event) {
 }
 
 function launchBalloonCrate(event) {
-  if (!camera || !scene) return
-  
-  const group = new THREE.Group()
-  // The Crate
   const crate = new THREE.Mesh(
      new THREE.BoxGeometry(0.8, 0.8, 0.8),
      new THREE.MeshLambertMaterial({ color: 0x825a2c })
   )
-  group.add(crate)
+  attachToBalloon(crate, 0xff4444)
+}
+
+function attachToBalloon(targetMesh, color = 0xff4444) {
+  if (!scene) return
+  
+  const group = new THREE.Group()
+  group.add(targetMesh)
   
   // The Balloon
   const balloon = new THREE.Mesh(
-     new THREE.SphereGeometry(0.5, 12, 12),
-     new THREE.MeshLambertMaterial({ color: 0xff4444 })
+     new THREE.SphereGeometry(0.55, 12, 12),
+     new THREE.MeshLambertMaterial({ color, emissive: color, emissiveIntensity: 0.1 })
   )
-  balloon.position.y = 1.4
+  balloon.position.y = 1.5
   group.add(balloon)
   
   // The String
   const string = new THREE.Mesh(
-     new THREE.CylinderGeometry(0.01, 0.01, 0.6),
+     new THREE.CylinderGeometry(0.012, 0.012, 0.8),
      new THREE.MeshLambertMaterial({ color: 0xffffff })
   )
-  string.position.y = 1
+  string.position.y = 1.1
   group.add(string)
+  
+  group.position.copy(targetMesh.position)
+  targetMesh.position.set(0, 0, 0) // Localize
+  
+  scene.add(group)
+  balloonObjects.push({ 
+    mesh: group, 
+    life: 25, 
+    speed: 1.8 + Math.random() * 2.2,
+    color
+  })
+}
+
+function shootBalloonCannon(event) {
+  if (!camera || !scene) return
+  
+  const ball = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18, 12, 12),
+    new THREE.MeshLambertMaterial({ color: 0xff44ff, emissive: 0xff44ff, emissiveIntensity: 0.5 })
+  )
   
   const dir = new THREE.Vector3()
   camera.getWorldDirection(dir)
-  group.position.copy(camera.position).addScaledVector(dir, 2.5)
-  group.position.y -= 0.5
   
-  scene.add(group)
-  balloonObjects.push({ mesh: group, life: 30, speed: 1.5 + Math.random() * 2 })
+  ball.position.copy(camera.position).addScaledVector(dir, 1)
+  scene.add(ball)
+  
+  const velocity = dir.clone().multiplyScalar(22)
+  laserProjectiles.push({ mesh: ball, velocity, life: 3, type: 'balloon_seed' })
 }
 
 function updateGuidePip(delta, elapsed) {
@@ -328,12 +401,18 @@ function updateBalloons(delta, elapsed) {
   for (let i = balloonObjects.length - 1; i >= 0; i--) {
      const b = balloonObjects[i]
      b.mesh.position.y += b.speed * delta
-     b.mesh.rotation.y += delta * 0.5
-     b.mesh.position.x += Math.sin(elapsed + i) * 0.02
-     b.mesh.position.z += Math.cos(elapsed + i) * 0.02
+     b.mesh.rotation.y += delta * 0.8
+     b.mesh.position.x += Math.sin(elapsed * 0.8 + i) * 0.04
+     b.mesh.position.z += Math.cos(elapsed * 0.7 + i) * 0.04
      b.life -= delta
      
-     if (b.life <= 0) {
+     if (b.life < 22) {
+       // Start drifting more
+       b.mesh.position.x += Math.sin(elapsed * 2) * 0.15
+     }
+
+     if (b.life <= 0 || b.mesh.position.y > 60) {
+        createFireworkEffect(b.mesh.position, b.color || 0xff4444)
         scene.remove(b.mesh)
         balloonObjects.splice(i, 1)
      }
@@ -420,6 +499,45 @@ function updatePokeballs(delta) {
       pokeballsInFlight.splice(i, 1)
     }
   }
+
+  // Update Lasers / Balloon Seeds
+  for (let i = laserProjectiles.length - 1; i >= 0; i--) {
+    const laser = laserProjectiles[i]
+    laser.mesh.position.addScaledVector(laser.velocity, delta)
+    laser.life -= delta
+
+    if (laser.type === 'balloon_seed') {
+      // Check collision with Pips
+      const meshMap = getPipMeshMap()
+      for (const [pipId, group] of meshMap) {
+        if (laser.mesh.position.distanceTo(group.position) < 1.2) {
+          const clone = group.clone()
+          if (removePip(pipId)) {
+             attachToBalloon(clone, 0x44ff44)
+             laser.life = -1
+             break
+          }
+        }
+      }
+
+      // Check collision with Farm Blocks
+      for (const [blockId, mesh] of farmBlockMeshes) {
+        if (laser.mesh.position.distanceTo(mesh.position) < 1.2) {
+          const clone = mesh.clone()
+          if (removeFarmBlock(blockId)) {
+            attachToBalloon(clone, 0x44ffff)
+            laser.life = -1
+            break
+          }
+        }
+      }
+    }
+
+    if (laser.life <= 0) {
+      scene.remove(laser.mesh)
+      laserProjectiles.splice(i, 1)
+    }
+  }
 }
 
 function createSignpost(glade) {
@@ -476,7 +594,12 @@ function onCanvasClick(event) {
   // Right click or special key for pokeball? 
   // Let's use left click if shift is held, or maybe just left click for pokeball in playful mode
   if (currentMode.value === 'playful') {
-    throwPokeball(event)
+    const currentItem = inventory.value[selectedSlot.value]
+    if (currentItem?.id === 'balloon_cannon') {
+       shootBalloonCannon(event)
+    } else {
+       throwPokeball(event)
+    }
     return
   }
 

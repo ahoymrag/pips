@@ -300,7 +300,8 @@ function mapPercentY(z) {
       <div class="last-action">Arcade flight tuning enabled.</div>
       <div class="last-action" style="color: #ffccf9; font-weight: 700;">
         ✨ Fairies Caught: {{ capturedFairies }}<br/>
-        <span style="font-size: 10px; opacity: 0.8;">Click to throw Pokeball!</span>
+        <span style="font-size: 10px; opacity: 0.8;">Click to throw Pokeball!</span><br/>
+        <span style="font-size: 10px; color: #ff99ff;">Balloon Cannon (6): Pop objects!</span>
       </div>
     </template>
 
