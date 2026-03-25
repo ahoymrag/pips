@@ -4,7 +4,7 @@ import { useApi } from '../composables/useApi.js'
 import { useWebSocket } from '../composables/useWebSocket.js'
 import { useDraggable } from '../composables/useDraggable.js'
 
-const { selectedPip, councilActive, chatOpen } = useScene()
+const { selectedPip, councilActive, chatOpen, addPipExp } = useScene()
 const { chatWithPip } = useApi()
 const { messages: wsMessages } = useWebSocket()
 
@@ -64,6 +64,15 @@ async function sendMessage() {
     })
   } finally {
     sending.value = false
+    const leveledUp = addPipExp(pipId, 25)
+    if (leveledUp) {
+      chatMessages.value.push({
+        role: 'pip',
+        name: 'System',
+        color: '#ffd700',
+        content: `✨ ${pipName} has LEVELED UP! Their intelligence is expanding.`
+      })
+    }
   }
 }
 

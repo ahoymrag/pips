@@ -24,8 +24,11 @@ const {
   fairies,
   capturedFairies,
   pokeballs,
+  wildPips,
   spawnFairy,
   captureFairy,
+  spawnWildPip,
+  captureWildPip,
   inventory,
   selectedSlot,
   equipHat,
@@ -43,6 +46,7 @@ const farmZoneMeshes = new Map()
 const signpostMeshes = []
 let companionMesh = null
 const fairyMeshes = new Map()
+const wildPipMeshes = new Map()
 const pokeballsInFlight = []
 
 function isInActiveFarmZone(x, z) {
@@ -228,6 +232,35 @@ function throwPokeball(event) {
   pokeballsInFlight.push({ mesh: ball, velocity, life: 3 })
 }
 
+function updateWildPips(delta, elapsed) {
+  if (!scene) return
+  
+  // Cleanup
+  const currentWildIds = new Set(wildPips.value.map(p => p.id))
+  for (const [id, mesh] of wildPipMeshes) {
+    if (!currentWildIds.has(id)) {
+      scene.remove(mesh)
+      wildPipMeshes.delete(id)
+    }
+  }
+
+  // Render ghostly pips
+  wildPips.value.forEach(p => {
+    let mesh = wildPipMeshes.get(p.id)
+    if (!mesh) {
+       mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(0.7, 0.7, 0.7),
+          new THREE.MeshLambertMaterial({ color: p.color, transparent: true, opacity: 0.5 })
+       )
+       mesh.position.set(p.x, 0.45, p.z)
+       scene.add(mesh)
+       wildPipMeshes.set(p.id, mesh)
+    }
+    mesh.position.y = 0.45 + Math.sin(elapsed * 2) * 0.1
+    mesh.rotation.y += delta * 1.5
+  })
+}
+
 function updatePokeballs(delta) {
   for (let i = pokeballsInFlight.length - 1; i >= 0; i--) {
     const ball = pokeballsInFlight[i]
@@ -250,6 +283,17 @@ function updatePokeballs(delta) {
             ball.life = -1 // Remove ball
          }
       }
+    })
+
+    // Check collisions with wild pips
+    wildPips.value.forEach(wp => {
+       const wMesh = wildPipMeshes.get(wp.id)
+       if (wMesh && ball.mesh.position.distanceTo(wMesh.position) < 1.5) {
+          createCaptureEffect(wMesh.position, wp.color)
+          if (captureWildPip(wp.id)) {
+             ball.life = -1
+          }
+       }
     })
     
     if (ball.life <= 0) {
@@ -356,10 +400,14 @@ function animate() {
   tickFarm(delta)
   updateCompanion(elapsed)
   updateFairies(delta, elapsed)
+  updateWildPips(delta, elapsed)
   updatePokeballs(delta)
   
   if (fairies.value.length < 5 && Math.random() < 0.01) {
     spawnFairy()
+  }
+  if (wildPips.value.length < 3 && Math.random() < 0.005) {
+     spawnWildPip()
   }
   if (camera) {
     setPlayerPosition(camera.position.x, camera.position.z)

@@ -52,6 +52,9 @@ watch(
           :style="{ backgroundColor: selectedPip.color || '#e06060' }"
         ></span>
         <strong style="font-size: 16px;">{{ selectedPip.name || 'Unknown Pip' }}</strong>
+        <span style="font-size: 11px; opacity: 0.8; background: #555; padding: 1px 4px; border-radius: 4px; color: #fff;">
+          Lv. {{ selectedPip.level || 1 }}
+        </span>
       </div>
       <button class="close-btn" @click.stop="deselectPip">&times;</button>
     </div>
@@ -69,6 +72,9 @@ watch(
       <span :style="{ color: selectedPip.status === 'active' ? '#6be07a' : '#e0c040' }">
         {{ selectedPip.status || 'idle' }}
       </span>
+      <div v-if="selectedPip.exp !== undefined" style="margin-top: 4px; height: 4px; width: 100%; background: rgba(0,0,0,0.2); border-radius: 2px; overflow: hidden;">
+         <div :style="{ width: `${selectedPip.exp}%`, height: '100%', background: '#ffd700' }"></div>
+      </div>
     </div>
 
     <div v-if="menuView === 'menu'" style="display: flex; flex-direction: column; gap: 8px;">

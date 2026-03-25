@@ -22,6 +22,7 @@ const inventory = ref([
   null, null, null, null // Empty slots
 ])
 const selectedSlot = ref(0)
+const wildPips = ref([])
 
 let nextFarmPipId = 1000
 const gladeSlots = ref(seedGlades())
@@ -333,6 +334,48 @@ export function useScene() {
     return false
   }
 
+  function spawnWildPip() {
+     const x = (Math.random() - 0.5) * 180
+     const z = (Math.random() - 0.5) * 180
+     const id = `wild-pip-${Date.now()}`
+     const color = ['#ffaaaa', '#aaffaa', '#aaaaff', '#ffffaa'][Math.floor(Math.random() * 4)]
+     wildPips.value.push({
+        id,
+        name: 'Wild Pip',
+        color,
+        x,
+        z,
+        level: Math.floor(Math.random() * 5) + 1,
+     })
+  }
+
+  function captureWildPip(wildId) {
+     const idx = wildPips.value.findIndex(p => p.id === wildId)
+     if (idx !== -1) {
+        const w = wildPips.value[idx]
+        const newPip = makePip('New Friend', w.color, w.x, w.z, 'Just captured from the wild!', activeGladeId.value)
+        newPip.source = 'wild'
+        pips.value.push(newPip)
+        wildPips.value.splice(idx, 1)
+        return true
+     }
+     return false
+  }
+
+  function addPipExp(pipId, amount) {
+     const p = pips.value.find(p => p.id === pipId)
+     if (p) {
+        p.exp = (p.exp || 0) + amount
+        if (p.exp > 100) {
+           p.level = (p.level || 1) + 1
+           p.model = p.level > 3 ? 'gpt-4' : p.model
+           p.exp = 0
+           return true // Evolved/Leveled up
+        }
+     }
+     return false
+  }
+
   return {
     selectedPip: readonly(selectedPip),
     pips,
@@ -376,7 +419,11 @@ export function useScene() {
     captureFairy,
     inventory,
     selectedSlot,
+    wildPips,
     equipHat,
+    spawnWildPip,
+    captureWildPip,
+    addPipExp,
   }
 }
 
