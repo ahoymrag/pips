@@ -43,6 +43,17 @@ export function syncPipMeshes(pips, scene) {
       mesh.userData.baseX = pip.position_x
       mesh.userData.baseZ = pip.position_z
     }
+    
+    // Sync hat
+    if (mesh.userData.currentHatId !== pip.hat) {
+      if (mesh.userData.hatMesh) mesh.remove(mesh.userData.hatMesh)
+      if (pip.hat) {
+        const hatMesh = buildHat(pip.hat)
+        mesh.add(hatMesh)
+        mesh.userData.hatMesh = hatMesh
+      }
+      mesh.userData.currentHatId = pip.hat
+    }
   })
 }
 
@@ -110,6 +121,48 @@ export function updatePipAnimations(time) {
 
     i++
   }
+}
+
+function buildHat(hatId) {
+  const group = new THREE.Group()
+  if (hatId === 'wizard_hat') {
+    const geo = new THREE.ConeGeometry(0.5, 0.8, 12)
+    const mat = new THREE.MeshLambertMaterial({ color: 0x4B3A6C })
+    const cone = new THREE.Mesh(geo, mat)
+    cone.position.y = 0.8
+    group.add(cone)
+    
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.05, 12), mat)
+    brim.position.y = 0.4
+    group.add(brim)
+  } else if (hatId === 'hard_hat') {
+    const geo = new THREE.SphereGeometry(0.45, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2)
+    const mat = new THREE.MeshLambertMaterial({ color: 0xffcc00 })
+    const dome = new THREE.Mesh(geo, mat)
+    dome.position.y = 0.4
+    group.add(dome)
+  } else if (hatId === 'beret') {
+    const geo = new THREE.CylinderGeometry(0.45, 0.4, 0.15, 12)
+    const mat = new THREE.MeshLambertMaterial({ color: 0x333333 })
+    const mat2 = new THREE.MeshLambertMaterial({ color: 0x333333 })
+    const top = new THREE.Mesh(geo, mat)
+    top.position.y = 0.45
+    group.add(top)
+  } else if (hatId === 'crown') {
+    const geo = new THREE.CylinderGeometry(0.45, 0.45, 0.4, 8, 1, true)
+    const mat = new THREE.MeshLambertMaterial({ color: 0xffd700 })
+    const ring = new THREE.Mesh(geo, mat)
+    ring.position.y = 0.6
+    group.add(ring)
+    
+    for (let i = 0; i < 8; i++) {
+       const spike = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.3, 4), mat)
+       const angle = (i / 8) * Math.PI * 2
+       spike.position.set(Math.cos(angle) * 0.45, 0.8, Math.sin(angle) * 0.45)
+       group.add(spike)
+    }
+  }
+  return group
 }
 
 function buildPipGroup(pip, index) {
@@ -245,6 +298,13 @@ function buildPipGroup(pip, index) {
   group.userData.baseZ = pz
   group.userData.pipId = pip.id
   group.userData.pipName = pip.name
+
+  if (pip.hat) {
+     const hatMesh = buildHat(pip.hat)
+     group.add(hatMesh)
+     group.userData.hatMesh = hatMesh
+     group.userData.currentHatId = pip.hat
+  }
 
   return group
 }

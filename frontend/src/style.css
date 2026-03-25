@@ -59,10 +59,11 @@ canvas {
   bottom: 92px;
   right: auto;
   top: auto;
-  z-index: 12;
+  z-index: 1000; /* High z-index */
   width: min(280px, calc(100vw - 32px));
   max-height: min(340px, calc(100vh - 200px));
   overflow-y: auto;
+  user-select: none; /* Helpful for dragging */
 }
 
 /* === Chat Window (bottom-right) === */
@@ -70,11 +71,12 @@ canvas {
   position: fixed;
   bottom: 16px;
   right: 16px;
-  z-index: 10;
+  z-index: 1001; /* High z-index */
   width: 350px;
   height: 400px;
   display: flex;
   flex-direction: column;
+  user-select: none; /* Helpful for dragging */
 }
 
 .chat-messages {
@@ -176,10 +178,33 @@ canvas {
   position: fixed;
   top: 80px;
   left: 12px;
-  z-index: 10;
+  z-index: 100;
   min-width: 190px;
   max-width: 220px;
   padding: 12px;
+  user-select: none;
+}
+
+.draggable {
+  cursor: grab;
+}
+
+.draggable:active {
+  cursor: grabbing;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  cursor: grab;
+}
+
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .controls-title {
@@ -351,9 +376,17 @@ canvas {
   position: fixed;
   top: 16px;
   right: 10px;
-  z-index: 11;
+  z-index: 101;
   width: 230px;
   padding: 12px;
+  user-select: none;
+  transition: max-height 0.4s ease, opacity 0.3s ease;
+}
+
+.insights-panel.collapsed {
+  max-height: 46px;
+  overflow: hidden;
+  opacity: 0.9;
 }
 
 .trend-row {
@@ -428,6 +461,54 @@ canvas {
 .roster-row {
   display: flex;
   gap: 6px;
+}
+
+/* === Hotbar (Minecraft style) === */
+.hotbar-wrap {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(30, 35, 50, 0.72);
+  border: 4px solid #333;
+  border-radius: 4px;
+  z-index: 500;
+}
+
+.hotbar-slot {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  background: rgba(140, 140, 140, 0.4);
+  border: 2px solid #222;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: inset 2px 2px 0 rgba(255, 255, 255, 0.1), inset -2px -2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.hotbar-slot.active {
+  background: rgba(180, 210, 255, 0.3);
+  border: 4px solid #fff;
+  margin: -2px; /* Offset the border increase */
+}
+
+.item-icon {
+  font-size: 26px;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+}
+
+.slot-number {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  font-size: 10px;
+  color: #fff;
+  opacity: 0.6;
 }
 
 .roster-slot {

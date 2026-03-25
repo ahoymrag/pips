@@ -1,12 +1,15 @@
-<script setup>
 import { ref, watch, nextTick, computed } from 'vue'
 import { useScene } from '../composables/useScene.js'
 import { useApi } from '../composables/useApi.js'
 import { useWebSocket } from '../composables/useWebSocket.js'
+import { useDraggable } from '../composables/useDraggable.js'
 
 const { selectedPip, councilActive, chatOpen } = useScene()
 const { chatWithPip } = useApi()
 const { messages: wsMessages } = useWebSocket()
+
+const chatWindowEl = ref(null)
+const { dragStyles, onMouseDown } = useDraggable(chatWindowEl, { x: 0, y: 0 }, 'pip-chat-pos')
 
 const chatMessages = ref([])
 const inputText = ref('')
@@ -106,8 +109,17 @@ defineExpose({ focusInput })
 </script>
 
 <template>
-  <div v-if="isVisible" class="chat-window panel">
-    <div style="font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+  <div
+    v-if="isVisible"
+    ref="chatWindowEl"
+    class="chat-window panel"
+    :style="dragStyles()"
+  >
+    <div
+      class="draggable"
+      style="font-weight: bold; margin-bottom: 8px; font-size: 14px; padding: 2px 0;"
+      @mousedown="onMouseDown"
+    >
       {{ headerText }}
     </div>
 

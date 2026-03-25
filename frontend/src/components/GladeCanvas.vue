@@ -21,6 +21,14 @@ const {
   placeFarmBlock,
   tickFarm,
   setPlayerPosition,
+  fairies,
+  capturedFairies,
+  pokeballs,
+  spawnFairy,
+  captureFairy,
+  inventory,
+  selectedSlot,
+  equipHat,
 } = useScene()
 
 let renderer = null
@@ -34,6 +42,8 @@ const farmBlockMeshes = new Map()
 const farmZoneMeshes = new Map()
 const signpostMeshes = []
 let companionMesh = null
+const fairyMeshes = new Map()
+const pokeballsInFlight = []
 
 function isInActiveFarmZone(x, z) {
   const zone = activeGlade.value?.zone
@@ -114,6 +124,141 @@ function updateCompanion(elapsed) {
   companionMesh.position.y = 0.48 + Math.sin(elapsed * 3.2) * 0.05
 }
 
+function updateFairies(delta, elapsed) {
+  if (!scene) return
+  
+  // Sync fairy meshes (cleanup removed ones)
+  const currentFairyIds = new Set(fairies.value.map(f => f.id))
+  for (const [id, mesh] of fairyMeshes) {
+    if (!currentFairyIds.has(id)) {
+      scene.remove(mesh)
+      fairyMeshes.delete(id)
+    }
+  }
+
+  // Update/Create
+  fairies.value.forEach(fairy => {
+    let mesh = fairyMeshes.get(fairy.id)
+    if (!mesh) {
+       const group = new THREE.Group()
+       const core = new THREE.Mesh(
+          new THREE.SphereGeometry(0.12, 8, 8),
+          new THREE.MeshLambertMaterial({ color: fairy.color, emissive: fairy.color, emissiveIntensity: 1 })
+       )
+       group.add(core)
+       
+       const glow = new THREE.Mesh(
+          new THREE.SphereGeometry(0.3, 8, 8),
+          new THREE.MeshLambertMaterial({ color: fairy.color, transparent: true, opacity: 0.35 })
+       )
+       group.add(glow)
+       
+       mesh = group
+       scene.add(mesh)
+       fairyMeshes.set(fairy.id, mesh)
+    }
+    
+    // Smooth movement
+    const targetX = fairy.x + Math.sin(elapsed * 0.5 + fairy.speed * 10) * 8
+    const targetZ = fairy.z + Math.cos(elapsed * 0.4 + fairy.speed * 10) * 8
+    
+    mesh.position.x += (targetX - mesh.position.x) * 0.05
+    mesh.position.z += (targetZ - mesh.position.z) * 0.05
+    mesh.position.y = fairy.y + Math.sin(elapsed * 2 + fairy.speed) * 0.5
+    
+    // Rotate glow
+    mesh.children[1].scale.setScalar(1 + Math.sin(elapsed * 4) * 0.2)
+  })
+}
+
+function createCaptureEffect(pos, color) {
+  const group = new THREE.Group()
+  for (let i = 0; i < 8; i++) {
+    const p = new THREE.Mesh(
+      new THREE.SphereGeometry(0.05),
+      new THREE.MeshBasicMaterial({ color })
+    )
+    const angle = (i / 8) * Math.PI * 2
+    p.userData.vel = new THREE.Vector3(Math.cos(angle), Math.sin(i), Math.sin(angle)).multiplyScalar(0.1)
+    group.add(p)
+  }
+  group.position.copy(pos)
+  scene.add(group)
+  
+  const startTime = clock.getElapsedTime()
+  const duration = 0.8
+  
+  const tick = () => {
+    const age = clock.getElapsedTime() - startTime
+    if (age > duration) {
+      scene.remove(group)
+      return
+    }
+    group.children.forEach(p => {
+      p.position.add(p.userData.vel)
+      p.scale.multiplyScalar(0.95)
+    })
+    requestAnimationFrame(tick)
+  }
+  tick()
+}
+
+function throwPokeball(event) {
+  if (!camera || !scene) return
+  
+  const ball = new THREE.Group()
+  const top = new THREE.Mesh(
+    new THREE.SphereGeometry(0.15, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.MeshLambertMaterial({ color: 0xff3333 })
+  )
+  const bottom = new THREE.Mesh(
+    new THREE.SphereGeometry(0.15, 12, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2),
+    new THREE.MeshLambertMaterial({ color: 0xffffff })
+  )
+  ball.add(top)
+  ball.add(bottom)
+  
+  const dir = new THREE.Vector3()
+  camera.getWorldDirection(dir)
+  
+  ball.position.copy(camera.position).addScaledVector(dir, 1)
+  scene.add(ball)
+  
+  const velocity = dir.clone().multiplyScalar(15)
+  pokeballsInFlight.push({ mesh: ball, velocity, life: 3 })
+}
+
+function updatePokeballs(delta) {
+  for (let i = pokeballsInFlight.length - 1; i >= 0; i--) {
+    const ball = pokeballsInFlight[i]
+    ball.mesh.position.addScaledVector(ball.velocity, delta)
+    ball.velocity.y -= 9.8 * delta // Gravity
+    ball.life -= delta
+    
+    if (ball.mesh.position.y < 0) {
+       ball.mesh.position.y = 0
+       ball.velocity.y *= -0.5 // Bounce
+    }
+    
+    // Check collisions with fairies
+    fairies.value.forEach(fairy => {
+      const fMesh = fairyMeshes.get(fairy.id)
+      if (fMesh && ball.mesh.position.distanceTo(fMesh.position) < 1.2) {
+         createCaptureEffect(fMesh.position, fairy.color)
+         if (captureFairy(fairy.id)) {
+            // captureFairy handles state removal, which updateFairies will cleanup
+            ball.life = -1 // Remove ball
+         }
+      }
+    })
+    
+    if (ball.life <= 0) {
+      scene.remove(ball.mesh)
+      pokeballsInFlight.splice(i, 1)
+    }
+  }
+}
+
 function createSignpost(glade) {
   const group = new THREE.Group()
   const post = new THREE.Mesh(
@@ -165,10 +310,23 @@ function onCanvasClick(event) {
     }
   }
 
+  // Right click or special key for pokeball? 
+  // Let's use left click if shift is held, or maybe just left click for pokeball in playful mode
+  if (currentMode.value === 'playful') {
+    throwPokeball(event)
+    return
+  }
+
   const pipId = pickPip(event, cam, meshMap, renderer, locked)
   if (pipId !== null) {
     const pip = pips.value.find((p) => p.id === pipId)
     if (pip) {
+      // If we have a hat selected, apply it instead of selecting
+      const currentItem = inventory.value[selectedSlot.value]
+      if (currentItem && currentItem.type === 'hat') {
+        equipHat(pip.id, currentItem)
+        return
+      }
       selectPip(pip)
     }
   }
@@ -197,6 +355,12 @@ function animate() {
   }
   tickFarm(delta)
   updateCompanion(elapsed)
+  updateFairies(delta, elapsed)
+  updatePokeballs(delta)
+  
+  if (fairies.value.length < 5 && Math.random() < 0.01) {
+    spawnFairy()
+  }
   if (camera) {
     setPlayerPosition(camera.position.x, camera.position.z)
   }

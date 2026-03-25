@@ -1,6 +1,6 @@
-<script setup>
 import { ref, watch } from 'vue'
 import { useScene } from '../composables/useScene.js'
+import { useDraggable } from '../composables/useDraggable.js'
 
 const {
   selectedPip,
@@ -8,6 +8,10 @@ const {
   openChat,
   closeChat,
 } = useScene()
+
+const pipOverlayEl = ref(null)
+const { dragStyles, onMouseDown } = useDraggable(pipOverlayEl, { x: 0, y: 0 }, 'pip-overlay-pos')
+
 const menuView = ref('menu')
 
 const emit = defineEmits(['focus-chat'])
@@ -31,8 +35,17 @@ watch(
 </script>
 
 <template>
-  <div v-if="selectedPip" class="pip-overlay panel">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+  <div
+    v-if="selectedPip"
+    ref="pipOverlayEl"
+    class="pip-overlay panel"
+    :style="dragStyles()"
+  >
+    <div
+      class="draggable"
+      style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 2px 0;"
+      @mousedown="onMouseDown"
+    >
       <div style="display: flex; align-items: center; gap: 8px;">
         <span
           class="status-dot"
@@ -40,7 +53,7 @@ watch(
         ></span>
         <strong style="font-size: 16px;">{{ selectedPip.name || 'Unknown Pip' }}</strong>
       </div>
-      <button class="close-btn" @click="deselectPip">&times;</button>
+      <button class="close-btn" @click.stop="deselectPip">&times;</button>
     </div>
 
     <div style="font-size: 12px; opacity: 0.7; margin-bottom: 8px;">

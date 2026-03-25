@@ -1,12 +1,44 @@
-<script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useScene } from './composables/useScene.js'
+import { useDraggable } from './composables/useDraggable.js'
 import GladeCanvas from './components/GladeCanvas.vue'
 import PipOverlay from './components/PipOverlay.vue'
 import ChatWindow from './components/ChatWindow.vue'
 import CouncilButton from './components/CouncilButton.vue'
 import NebulaIntro from './components/NebulaIntro.vue'
 import { teleportNearTarget } from './three/camera.js'
+
+const controlsPanelEl = ref(null)
+const insightsPanelEl = ref(null)
+const { dragStyles: controlsDragStyles, onMouseDown: onControlsMouseDown } = useDraggable(controlsPanelEl, { x: 0, y: 0 }, 'controls-panel-pos')
+const { dragStyles: insightsDragStyles, onMouseDown: onInsightsMouseDown } = useDraggable(insightsPanelEl, { x: 0, y: 0 }, 'insights-panel-pos')
+
+const insightsCollapsed = ref(false)
+const showSettings = ref(false)
+const uiSettings = ref({
+  showHud: true,
+  showIntel: true,
+  showDock: true,
+  opacity: 0.75,
+})
+
+// Load UI settings
+const savedUi = localStorage.getItem('pips-ui-settings')
+if (savedUi) {
+  try { uiSettings.value = { ...uiSettings.value, ...JSON.parse(savedUi) } } catch (e) {}
+}
+
+function saveUiSettings() {
+  localStorage.setItem('pips-ui-settings', JSON.stringify(uiSettings.value))
+}
+
+function resetAllPositions() {
+  localStorage.removeItem('controls-panel-pos')
+  localStorage.removeItem('insights-panel-pos')
+  localStorage.removeItem('pip-chat-pos')
+  localStorage.removeItem('pip-overlay-pos')
+  window.location.reload() // Quickest way to reset all states correctly
+}
 
 const {
   currentMode,
@@ -21,6 +53,9 @@ const {
   gladeSlots,
   gladeSummaries,
   playerPosition,
+  capturedFairies,
+  inventory,
+  selectedSlot,
   selectGladeSlot,
   setMode,
   cycleMode,
@@ -64,6 +99,13 @@ function onKeyDown(event) {
   }
   const key = event.key
   if (key < '1' || key > '9') return
+  
+  // Select hotbar slot if not in build mode tool range
+  const num = Number(key)
+  if (num >= 1 && num <= 8) {
+    selectedSlot.value = num - 1
+  }
+
   if (buildMode.value && key <= '5') {
     selectToolByKey(key)
     return
@@ -114,8 +156,55 @@ function mapPercentY(z) {
   <PipOverlay @focus-chat="focusChat" />
   <ChatWindow ref="chatWindow" />
   <CouncilButton />
-  <div class="controls-panel panel game-panel">
-    <div class="controls-title">HUD</div>
+
+  <!-- Minecraft Hotbar -->
+  <div class="hotbar-wrap">
+     <div 
+        v-for="(item, idx) in inventory" 
+        :key="idx" 
+        class="hotbar-slot"
+        :class="{ active: selectedSlot === idx }"
+        @click="selectedSlot = idx"
+     >
+        <span v-if="item" class="item-icon" :title="item.label">{{ item.icon }}</span>
+        <span class="slot-number">{{ idx + 1 }}</span>
+     </div>
+  </div>
+  
+  <div style="position: fixed; top: 16px; left: 160px; z-index: 100;">
+    <button class="council-btn" @click="showSettings = !showSettings">⚙️ Settings</button>
+  </div>
+
+  <div v-if="showSettings" class="about-overlay panel game-panel" style="z-index: 2000; width: 300px; padding: 20px;">
+    <h3 style="margin-bottom: 20px;">UI Settings</h3>
+    <div style="display: flex; flex-direction: column; gap: 15px; width: 100%; text-align: left;">
+      <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+        <input type="checkbox" v-model="uiSettings.showHud" @change="saveUiSettings" /> Show HUD (Left)
+      </label>
+      <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+        <input type="checkbox" v-model="uiSettings.showIntel" @change="saveUiSettings" /> Show District Intel (Right)
+      </label>
+      <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+        <input type="checkbox" v-model="uiSettings.showDock" @change="saveUiSettings" /> Show District Dock (Bottom)
+      </label>
+      <div style="display: flex; flex-direction: column; gap: 5px;">
+        <label>Panel Opacity: {{ Math.round(uiSettings.opacity * 100) }}%</label>
+        <input type="range" v-model.number="uiSettings.opacity" min="0.2" max="1" step="0.05" @input="saveUiSettings" />
+      </div>
+      <button class="send-btn" style="margin-top: 10px;" @click="resetAllPositions">Reset Positions</button>
+      <button class="send-btn" @click="showSettings = false">Done</button>
+    </div>
+  </div>
+
+  <div
+    v-if="uiSettings.showHud"
+    ref="controlsPanelEl"
+    class="controls-panel panel game-panel"
+    :style="{ ...controlsDragStyles(), opacity: uiSettings.opacity }"
+  >
+    <div class="panel-header draggable" @mousedown="onControlsMouseDown">
+      <div class="controls-title" style="margin-bottom: 0;">HUD</div>
+    </div>
     <div class="mode-chips">
       <button
         v-for="mode in modeDefinitions"
@@ -178,6 +267,10 @@ function mapPercentY(z) {
       <div class="control-line"><span class="keycap key-wide">Ctrl</span> Dive</div>
       <div class="control-line"><span class="keycap key-wide">Shift</span> Boost</div>
       <div class="last-action">Arcade flight tuning enabled.</div>
+      <div class="last-action" style="color: #ffccf9; font-weight: 700;">
+        ✨ Fairies Caught: {{ capturedFairies }}<br/>
+        <span style="font-size: 10px; opacity: 0.8;">Click to throw Pokeball!</span>
+      </div>
     </template>
 
     <template v-else-if="currentMode === 'wizard'">
@@ -208,8 +301,19 @@ function mapPercentY(z) {
       </div>
     </template>
   </div>
-  <div class="insights-panel panel game-panel">
-    <div class="controls-title">District Intel</div>
+  <div
+    v-if="uiSettings.showIntel"
+    ref="insightsPanelEl"
+    class="insights-panel panel game-panel"
+    :class="{ collapsed: insightsCollapsed }"
+    :style="{ ...insightsDragStyles(), opacity: uiSettings.opacity }"
+  >
+    <div class="panel-header draggable" @mousedown="onInsightsMouseDown">
+      <div class="controls-title" style="margin-bottom: 0;">District Intel</div>
+      <button class="close-btn" @click.stop="insightsCollapsed = !insightsCollapsed">
+        {{ insightsCollapsed ? '+' : '−' }}
+      </button>
+    </div>
     <div
       v-for="row in gladeTrendRows"
       :key="row.id"
@@ -242,7 +346,7 @@ function mapPercentY(z) {
     </div>
   </div>
 
-  <div class="roster-dock panel game-panel">
+  <div v-if="uiSettings.showDock" class="roster-dock panel game-panel" :style="{ opacity: uiSettings.opacity }">
     <div class="controls-title" style="margin-bottom: 6px;">District Dock</div>
     <div class="roster-row">
       <button

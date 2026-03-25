@@ -11,6 +11,17 @@ const farmStats = ref(makeEmptyFarmStats())
 const farmSpawnNotice = ref('')
 const activeGladeId = ref('glade-ahoy')
 const playerPosition = ref({ x: 0, z: 0 })
+const fairies = ref([])
+const capturedFairies = ref(0)
+const pokeballs = ref(10)
+const inventory = ref([
+  { id: 'wizard_hat', label: 'Wizard Hat', icon: '🧙‍♂️', type: 'hat', effect: 'claude-3-opus-20240229' },
+  { id: 'hard_hat', label: 'Hard Hat', icon: '👷', type: 'hat', effect: 'ollama' },
+  { id: 'beret', label: 'Beret', icon: '🎨', type: 'hat', effect: 'personality' },
+  { id: 'crown', label: 'Crown', icon: '👑', type: 'hat', effect: 'lead' },
+  null, null, null, null // Empty slots
+])
+const selectedSlot = ref(0)
 
 let nextFarmPipId = 1000
 const gladeSlots = ref(seedGlades())
@@ -269,6 +280,59 @@ export function useScene() {
     return newGlade
   }
 
+  function spawnFairy() {
+    const x = (Math.random() - 0.5) * 200
+    const z = (Math.random() - 0.5) * 200
+    const color = ['#ffccf9', '#ccffff', '#ffffcc', '#ccffcc'][Math.floor(Math.random() * 4)]
+    fairies.value.push({
+      id: 'fairy-' + Date.now() + Math.random(),
+      x,
+      y: 5 + Math.random() * 5,
+      z,
+      color,
+      speed: 0.5 + Math.random() * 1.5,
+    })
+  }
+
+  function captureFairy(fairyId) {
+    const idx = fairies.value.findIndex((f) => f.id === fairyId)
+    if (idx !== -1) {
+      fairies.value.splice(idx, 1)
+      capturedFairies.value++
+      return true
+    }
+    return false
+  }
+
+  function equipHat(pipId, hat) {
+    const pipIdx = pips.value.findIndex((p) => p.id === pipId)
+    if (pipIdx !== -1) {
+      const p = pips.value[pipIdx]
+      p.hat = hat ? hat.id : null
+      
+      // Effects
+      if (hat) {
+        if (hat.id === 'wizard_hat') {
+          p.provider = 'anthropic'
+          p.model = 'claude-3-opus-20240229'
+          p.personality = 'Extremely wise and eloquent, master of logic.'
+        } else if (hat.id === 'hard_hat') {
+          p.provider = 'ollama'
+          p.model = 'llama3'
+          p.personality = 'Reliable and focused on the task at hand.'
+        } else if (hat.id === 'beret') {
+          p.personality = 'A creative soul, speaks in poetic metaphors.'
+        } else if (hat.id === 'crown') {
+          p.personality = 'The Royal Leader of the Glade. Commands respect.'
+        }
+      }
+      
+      pips.value[pipIdx] = { ...p }
+      return true
+    }
+    return false
+  }
+
   return {
     selectedPip: readonly(selectedPip),
     pips,
@@ -305,6 +369,14 @@ export function useScene() {
     placeFarmBlock,
     tickFarm,
     spawnDynamicGlade,
+    fairies,
+    capturedFairies,
+    pokeballs,
+    spawnFairy,
+    captureFairy,
+    inventory,
+    selectedSlot,
+    equipHat,
   }
 }
 
