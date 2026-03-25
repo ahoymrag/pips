@@ -12,6 +12,9 @@ let points = null
 let animationId = null
 let startMs = 0
 
+const buildTime = __BUILD_TIME__
+const commitName = __COMMIT_NAME__
+
 const INTRO_MS = 5600
 
 function finishIntro() {
@@ -107,9 +110,15 @@ onUnmounted(() => {
 
 <template>
   <div class="intro-wrap">
+    <div class="build-info">
+      BUILD: {{ buildTime }} | {{ commitName }}
+    </div>
     <div ref="container" class="intro-canvas"></div>
     <div class="intro-overlay">
-      <div class="intro-title">Welcome to The Glade Network</div>
+      <div class="intro-title-wrap">
+        <div class="intro-accent">WELCOME TO THE</div>
+        <div class="intro-title">GLADE NETWORK</div>
+      </div>
       <div class="intro-text">
         Welcome to Pips, your interactive portfolio and project management universe, visualized as a lush, 3D environment. Here, your real-world projects—like Ahoy Indie Media and The Film Project—are represented as dynamic island worlds called Glades. Each Glade is inhabited by AI agents, or "Pips," dedicated to specific roles within your teams. You can oversee operations, brainstorm with agents, and build out your team's infrastructure all in real-time. Step into the vortex and watch your projects come to life!
       </div>
@@ -142,22 +151,63 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-.intro-title {
-  font-size: 24px;
-  color: #f6e9ff;
-  text-shadow: 0 0 18px rgba(193, 133, 255, 0.7);
-  margin-bottom: 12px;
+.build-info {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8.5px;
+  color: rgba(180, 160, 255, 0.4);
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  z-index: 1000;
+  pointer-events: none;
+  white-space: nowrap;
 }
+
+.intro-title-wrap {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.intro-accent {
+  font-size: 14px;
+  font-weight: 800;
+  color: #ff3df8;
+  letter-spacing: 4px;
+  text-shadow: 0 0 10px rgba(255, 61, 248, 0.4);
+}
+
+.intro-title {
+  font-size: clamp(48px, 11vw, 130px);
+  font-weight: 950;
+  font-style: italic;
+  letter-spacing: -2.5px;
+  color: #fff;
+  line-height: 0.85;
+  -webkit-text-stroke: 3.5px #000;
+  text-transform: uppercase;
+  text-shadow: 
+    6px 6px 0px #cf0aff,
+    -3px -3px 0px #0aefff,
+    0 0 40px rgba(200, 100, 255, 0.4);
+  transform: skewX(-6deg);
+  margin-top: 8px;
+  filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+}
+
 
 .intro-text {
   font-size: 15px;
-  color: #d8c8e8;
+  color: #e0d5ff;
   max-width: 620px;
   text-align: center;
-  line-height: 1.6;
-  margin-bottom: 24px;
-  text-shadow: 0 0 10px rgba(0,0,0,0.8);
+  line-height: 1.7;
+  margin-bottom: 32px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
   pointer-events: auto;
+  opacity: 0.9;
 }
 
 .intro-skip {
@@ -166,8 +216,18 @@ onUnmounted(() => {
   border-radius: 999px;
   background: rgba(40, 20, 70, 0.6);
   color: #f7ecff;
-  padding: 8px 16px;
+  padding: 10px 24px;
   cursor: pointer;
   font-family: inherit;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
 }
+
+.intro-skip:hover {
+  background: rgba(100, 40, 160, 0.8);
+  border-color: #fff;
+  transform: scale(1.05);
+}
+
 </style>
