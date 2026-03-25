@@ -116,8 +116,12 @@ onUnmounted(() => {
     <div ref="container" class="intro-canvas"></div>
     <div class="intro-overlay">
       <div class="intro-title-wrap">
-        <div class="intro-accent">WELCOME TO THE</div>
-        <div class="intro-title">GLADE NETWORK</div>
+        <div class="title-layers">
+          <div class="title-layer layer-asian layer-3">グレイド・ネットワークへようこそ</div>
+          <div class="title-layer layer-asian layer-2">グレイド・ネットワークへようこそ</div>
+          <div class="title-layer layer-asian layer-1">グレイド・ネットワークへようこそ</div>
+          <div class="title-layer layer-english">WELCOME TO THE GLADE NETWORK</div>
+        </div>
       </div>
       <div class="intro-text">
         Welcome to Pips, your interactive portfolio and project management universe, visualized as a lush, 3D environment. Here, your real-world projects—like Ahoy Indie Media and The Film Project—are represented as dynamic island worlds called Glades. Each Glade is inhabited by AI agents, or "Pips," dedicated to specific roles within your teams. You can oversee operations, brainstorm with agents, and build out your team's infrastructure all in real-time. Step into the vortex and watch your projects come to life!
@@ -167,35 +171,71 @@ onUnmounted(() => {
 }
 
 .intro-title-wrap {
-  text-align: center;
-  margin-bottom: 24px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 48px;
+  width: 100%;
 }
 
-.intro-accent {
-  font-size: 14px;
-  font-weight: 800;
-  color: #ff3df8;
-  letter-spacing: 4px;
-  text-shadow: 0 0 10px rgba(255, 61, 248, 0.4);
+.title-layers {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 160px;
 }
 
-.intro-title {
-  font-size: clamp(48px, 11vw, 130px);
-  font-weight: 950;
-  font-style: italic;
-  letter-spacing: -2.5px;
-  color: #fff;
-  line-height: 0.85;
-  -webkit-text-stroke: 3.5px #000;
+.title-layer {
   text-transform: uppercase;
-  text-shadow: 
-    6px 6px 0px #cf0aff,
-    -3px -3px 0px #0aefff,
-    0 0 40px rgba(200, 100, 255, 0.4);
-  transform: skewX(-6deg);
-  margin-top: 8px;
-  filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+  font-style: italic;
+  font-weight: 950;
+  white-space: nowrap;
+  line-height: 1;
+  pointer-events: none;
 }
+
+.layer-english {
+  position: relative;
+  z-index: 40;
+  font-size: clamp(72px, 9vw, 110px);
+  color: #fff;
+  -webkit-text-stroke: 3px #000;
+  letter-spacing: -2px;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+  transform: skewX(-10deg);
+}
+
+.layer-asian {
+  position: absolute;
+  font-size: clamp(80px, 12vw, 140px);
+  opacity: 0.8;
+  filter: blur(1px);
+  transform: skewX(-10deg);
+}
+
+.layer-1 {
+  z-index: 30;
+  color: #ff0055;
+  transform: skewX(-10deg) translate(8px, 8px);
+}
+
+.layer-2 {
+  z-index: 20;
+  color: #00f2ff;
+  transform: skewX(-10deg) translate(-8px, -8px);
+}
+
+.layer-3 {
+  z-index: 10;
+  color: #7000ff;
+  transform: skewX(-10deg) translate(0px, 0px);
+  filter: blur(4px);
+  opacity: 0.6;
+}
+
+
+
 
 
 .intro-text {
