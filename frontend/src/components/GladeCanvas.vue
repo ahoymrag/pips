@@ -48,6 +48,8 @@ let companionMesh = null
 const fairyMeshes = new Map()
 const wildPipMeshes = new Map()
 const pokeballsInFlight = []
+const balloonObjects = []
+const laserProjectiles = []
 
 function isInActiveFarmZone(x, z) {
   const zone = activeGlade.value?.zone
@@ -232,6 +234,58 @@ function throwPokeball(event) {
   pokeballsInFlight.push({ mesh: ball, velocity, life: 3 })
 }
 
+function launchBalloonCrate(event) {
+  if (!camera || !scene) return
+  
+  const group = new THREE.Group()
+  // The Crate
+  const crate = new THREE.Mesh(
+     new THREE.BoxGeometry(0.8, 0.8, 0.8),
+     new THREE.MeshLambertMaterial({ color: 0x825a2c })
+  )
+  group.add(crate)
+  
+  // The Balloon
+  const balloon = new THREE.Mesh(
+     new THREE.SphereGeometry(0.5, 12, 12),
+     new THREE.MeshLambertMaterial({ color: 0xff4444 })
+  )
+  balloon.position.y = 1.4
+  group.add(balloon)
+  
+  // The String
+  const string = new THREE.Mesh(
+     new THREE.CylinderGeometry(0.01, 0.01, 0.6),
+     new THREE.MeshLambertMaterial({ color: 0xffffff })
+  )
+  string.position.y = 1
+  group.add(string)
+  
+  const dir = new THREE.Vector3()
+  camera.getWorldDirection(dir)
+  group.position.copy(camera.position).addScaledVector(dir, 2.5)
+  group.position.y -= 0.5
+  
+  scene.add(group)
+  balloonObjects.push({ mesh: group, life: 30, speed: 1.5 + Math.random() * 2 })
+}
+
+function updateBalloons(delta, elapsed) {
+  for (let i = balloonObjects.length - 1; i >= 0; i--) {
+     const b = balloonObjects[i]
+     b.mesh.position.y += b.speed * delta
+     b.mesh.rotation.y += delta * 0.5
+     b.mesh.position.x += Math.sin(elapsed + i) * 0.02
+     b.mesh.position.z += Math.cos(elapsed + i) * 0.02
+     b.life -= delta
+     
+     if (b.life <= 0) {
+        scene.remove(b.mesh)
+        balloonObjects.splice(i, 1)
+     }
+  }
+}
+
 function updateWildPips(delta, elapsed) {
   if (!scene) return
   
@@ -295,6 +349,17 @@ function updatePokeballs(delta) {
           }
        }
     })
+
+    // Check collisions with Balloons
+    for (let j = balloonObjects.length - 1; j >= 0; j--) {
+       const b = balloonObjects[j]
+       if (ball.mesh.position.distanceTo(b.mesh.position.clone().add(new THREE.Vector3(0, 1.4, 0))) < 1) {
+          createCaptureEffect(b.mesh.position, 0xff4444)
+          scene.remove(b.mesh)
+          balloonObjects.splice(j, 1)
+          ball.life = -1
+       }
+    }
     
     if (ball.life <= 0) {
       scene.remove(ball.mesh)
@@ -401,6 +466,7 @@ function animate() {
   updateCompanion(elapsed)
   updateFairies(delta, elapsed)
   updateWildPips(delta, elapsed)
+  updateBalloons(delta, elapsed)
   updatePokeballs(delta)
   
   if (fairies.value.length < 5 && Math.random() < 0.01) {
@@ -544,10 +610,17 @@ onUnmounted(() => {
     }
   }
 })
+
+function onContextMenu(event) {
+  event.preventDefault()
+  if (currentMode.value === 'playful') {
+     launchBalloonCrate(event)
+  }
+}
 </script>
 
 <template>
-  <div ref="container" class="glade-canvas" @click="onCanvasClick"></div>
+  <div ref="container" class="glade-canvas" @click="onCanvasClick" @contextmenu="onContextMenu"></div>
 </template>
 
 <style scoped>
