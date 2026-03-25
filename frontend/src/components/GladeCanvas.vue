@@ -25,13 +25,17 @@ const {
   capturedFairies,
   pokeballs,
   wildPips,
+  onboardingStep,
+  guidePip,
   spawnFairy,
   captureFairy,
   spawnWildPip,
   captureWildPip,
+  nextOnboarding,
   inventory,
   selectedSlot,
   equipHat,
+  feedPip,
 } = useScene()
 
 let renderer = null
@@ -49,6 +53,7 @@ const fairyMeshes = new Map()
 const wildPipMeshes = new Map()
 const pokeballsInFlight = []
 const balloonObjects = []
+let guideMesh = null
 const laserProjectiles = []
 
 function isInActiveFarmZone(x, z) {
@@ -270,6 +275,55 @@ function launchBalloonCrate(event) {
   balloonObjects.push({ mesh: group, life: 30, speed: 1.5 + Math.random() * 2 })
 }
 
+function updateGuidePip(delta, elapsed) {
+   if (!scene || !guidePip.value) return
+   
+   if (!guideMesh && onboardingStep.value <= 4) {
+      guideMesh = new THREE.Mesh(
+         new THREE.BoxGeometry(1, 1, 1),
+         new THREE.MeshLambertMaterial({ color: guidePip.value.color })
+      )
+      scene.add(guideMesh)
+   }
+   
+   if (!guideMesh) return
+   
+   if (onboardingStep.value === 0) {
+      if (guidePip.value.size > 1) {
+         guidePip.value.size -= delta * 2
+      } else {
+         guidePip.value.size = 1
+         onboardingStep.value = 2 // Start Tour
+      }
+   }
+   
+   if (onboardingStep.value === 2) {
+      const targetX = 55
+      const targetZ = -35
+      const dx = targetX - guidePip.value.x
+      const dz = targetZ - guidePip.value.z
+      const dist = Math.hypot(dx, dz)
+      
+      if (dist > 2) {
+         const speed = 7.0
+         guidePip.value.x += (dx / dist) * speed * delta
+         guidePip.value.z += (dz / dist) * speed * delta
+      } else {
+         onboardingStep.value = 3 // Arrived
+      }
+   }
+   
+   if (onboardingStep.value >= 4) {
+      scene.remove(guideMesh)
+      guideMesh = null
+      return
+   }
+
+   guideMesh.scale.setScalar(guidePip.value.size)
+   guideMesh.position.set(guidePip.value.x, (guidePip.value.size / 2) + 0.1, guidePip.value.z)
+   guideMesh.rotation.y += delta * 2
+}
+
 function updateBalloons(delta, elapsed) {
   for (let i = balloonObjects.length - 1; i >= 0; i--) {
      const b = balloonObjects[i]
@@ -466,6 +520,7 @@ function animate() {
   updateCompanion(elapsed)
   updateFairies(delta, elapsed)
   updateWildPips(delta, elapsed)
+  updateGuidePip(delta, elapsed)
   updateBalloons(delta, elapsed)
   updatePokeballs(delta)
   

@@ -19,10 +19,13 @@ const inventory = ref([
   { id: 'hard_hat', label: 'Hard Hat', icon: '👷', type: 'hat', effect: 'ollama' },
   { id: 'beret', label: 'Beret', icon: '🎨', type: 'hat', effect: 'personality' },
   { id: 'crown', label: 'Crown', icon: '👑', type: 'hat', effect: 'lead' },
-  null, null, null, null // Empty slots
+  { id: 'pip_treat', label: 'Pip Treat', icon: '🍎', type: 'food', effect: 'exp' },
+  null, null, null // Empty slots
 ])
 const selectedSlot = ref(0)
 const wildPips = ref([])
+const onboardingStep = ref(0) // 0: Start, 1: Shrinking, 2: Tour, 3: Arrival, 4: Fed, 5: Done
+const guidePip = ref({ id: 'guide', name: 'Nebula', color: '#c9a0ff', x: 13.5, z: 13.5, size: 5, targetX: 13.5, targetZ: 13.5 })
 
 let nextFarmPipId = 1000
 const gladeSlots = ref(seedGlades())
@@ -363,17 +366,29 @@ export function useScene() {
   }
 
   function addPipExp(pipId, amount) {
-     const p = pips.value.find(p => p.id === pipId)
-     if (p) {
-        p.exp = (p.exp || 0) + amount
-        if (p.exp > 100) {
-           p.level = (p.level || 1) + 1
-           p.model = p.level > 3 ? 'gpt-4' : p.model
-           p.exp = 0
-           return true // Evolved/Leveled up
-        }
-     }
-     return false
+    if (p) {
+      p.exp = (p.exp || 0) + amount
+      if (p.exp > 100) {
+        p.level = (p.level || 1) + 1
+        p.model = p.level > 3 ? 'gpt-4' : p.model
+        p.exp = 0
+        return true
+      }
+    }
+    return false
+  }
+   function feedPip(pipId) {
+    const p = pips.value.find(p => p.id === pipId)
+    if (p) {
+      addPipExp(pipId, 50)
+      if (onboardingStep.value === 3) onboardingStep.value = 4
+      return true
+    }
+    return false
+  }
+
+  function nextOnboarding() {
+    onboardingStep.value++
   }
 
   return {
@@ -424,6 +439,10 @@ export function useScene() {
     spawnWildPip,
     captureWildPip,
     addPipExp,
+    onboardingStep,
+    guidePip,
+    feedPip,
+    nextOnboarding,
   }
 }
 

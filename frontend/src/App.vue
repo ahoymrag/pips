@@ -56,6 +56,8 @@ const {
   capturedFairies,
   inventory,
   selectedSlot,
+  onboardingStep,
+  feedPip,
   selectGladeSlot,
   setMode,
   cycleMode,
@@ -156,6 +158,28 @@ function mapPercentY(z) {
   <PipOverlay @focus-chat="focusChat" />
   <ChatWindow ref="chatWindow" />
   <CouncilButton />
+
+  <div class="crosshair"></div>
+
+  <!-- Tutorial Overlay -->
+  <div v-if="onboardingStep < 5" class="tutorial-overlay">
+    <div v-if="onboardingStep === 0" class="tut-card">
+      <h2>Welcome to the Glade!</h2>
+      <p>A giant <strong>Nebula</strong> has appeared to guide you.</p>
+      <p>Watch it shrink and get ready...</p>
+    </div>
+    <div v-if="onboardingStep === 2" class="tut-card">
+      <p>Follow Nebula to the <strong>Forge Glade</strong>!</p>
+      <p>Use <strong>WASD</strong> to move and <strong>Shift</strong> to sprint.</p>
+    </div>
+    <div v-if="onboardingStep === 3" class="tut-card highlight">
+      <p>Nebula is hungry! Select the <strong>Pip Treat (5)</strong> from your hotbar and click on Nebula to feed it.</p>
+    </div>
+    <div v-if="onboardingStep === 4" class="tut-card">
+      <p>Great job! You've learned the basics.</p>
+      <button @click="onboardingStep = 5" class="action-btn">Start Orchestration</button>
+    </div>
+  </div>
 
   <!-- Minecraft Hotbar -->
   <div class="hotbar-wrap">

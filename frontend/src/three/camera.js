@@ -42,10 +42,14 @@ export function createCamera(renderer, domElement) {
 
   domEl = domElement
 
-  // Always-visible cursor mode: hold right mouse to look
-  domElement.addEventListener('contextmenu', onContextMenu)
-  domElement.addEventListener('mousedown', onMouseDown)
-  document.addEventListener('mouseup', onMouseUp)
+  // Pointer lock listener
+  domElement.addEventListener('click', () => {
+    if (!isLocked) domElement.requestPointerLock()
+  })
+  
+  document.addEventListener('pointerlockchange', () => {
+    isLocked = document.pointerLockElement === domElement
+  })
 
   document.addEventListener('mousemove', onMouseMove)
   document.addEventListener('keydown', onKeyDown)
@@ -83,10 +87,10 @@ export function updateCamera(delta, options = {}) {
   const playful = mode === 'playful'
 
   const moveSpeed = playful
-    ? (keys.shift ? 19 : 12)
-    : (keys.shift ? 12.5 : 8.2)
-  const acceleration = playful ? 52 : 40
-  const damping = playful ? 7 : 11
+    ? (keys.shift ? 16 : 10)
+    : (keys.shift ? 5.612 : 4.317) // Minecraft base speeds in m/s
+  const acceleration = playful ? 60 : 50
+  const damping = playful ? 6 : 10
 
   // Direction from keys
   direction.set(0, 0, 0)
@@ -145,13 +149,13 @@ export function updateCamera(delta, options = {}) {
 
   // Subtle head bob in grounded modes
   if (!playful) {
-    const isMoving = direction.lengthSq() > 0
+    const isMoving = direction.lengthSq() > 0 && (keys.forward || keys.backward || keys.left || keys.right)
     if (isMoving) {
-      moveTime += delta * (keys.shift ? 12 : 9)
+      moveTime += delta * (keys.shift ? 14 : 10)
     } else {
-      moveTime = 0
+      moveTime *= 0.9 // Smooth stop
     }
-    const bobAmount = isMoving ? Math.sin(moveTime) * 0.028 : 0
+    const bobAmount = Math.sin(moveTime) * 0.04 * (isMoving ? 1 : 0)
     camera.position.y = EYE_HEIGHT + bobAmount
   }
 
@@ -172,13 +176,12 @@ export function updateCamera(delta, options = {}) {
 }
 
 function onMouseMove(e) {
-  if (!lookDragActive || !camera) return
+  if (!isLocked || !camera) return
 
-  // Higher = less physical mouse movement to turn (tighter FPS feel)
-  const sensitivity = 0.0031
+  const sensitivity = 0.0022
   yaw -= e.movementX * sensitivity
   pitch -= e.movementY * sensitivity
-  pitch = THREE.MathUtils.clamp(pitch, -Math.PI / 2.4, Math.PI / 2.4)
+  pitch = THREE.MathUtils.clamp(pitch, -Math.PI / 2.1, Math.PI / 2.1)
   euler.set(pitch, yaw, 0)
   camera.quaternion.setFromEuler(euler)
 }
