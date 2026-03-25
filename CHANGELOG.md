@@ -1,6 +1,9 @@
 # Changelog - Pips
 
 ## 2026-03-25
+### UI Panel Collapse Toggles
+- **Min/Max Panels**: HUD, District Intel, and District Dock panels now have +/− toggle buttons to collapse and expand, with smooth CSS transitions.
+
 ### Gamification & Minecraft Features
 - **Minecraft Hotbar**: Added an 8-slot hotbar with support for items and keyboard shortcuts (1-8).
 - **Hat System**: Implemented a 3D accessory system for Pips. Hats (Wizard, Hard Hat, Beret, Crown) now change the agent's LLM model, provider, and personality.

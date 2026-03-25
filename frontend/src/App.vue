@@ -14,6 +14,8 @@ const { dragStyles: controlsDragStyles, onMouseDown: onControlsMouseDown } = use
 const { dragStyles: insightsDragStyles, onMouseDown: onInsightsMouseDown } = useDraggable(insightsPanelEl, { x: 0, y: 0 }, 'insights-panel-pos')
 
 const insightsCollapsed = ref(false)
+const controlsCollapsed = ref(false)
+const dockCollapsed = ref(false)
 const showSettings = ref(false)
 const uiSettings = ref({
   showHud: true,
@@ -224,11 +226,16 @@ function mapPercentY(z) {
     v-if="uiSettings.showHud"
     ref="controlsPanelEl"
     class="controls-panel panel game-panel"
+    :class="{ collapsed: controlsCollapsed }"
     :style="{ ...controlsDragStyles(), opacity: uiSettings.opacity }"
   >
     <div class="panel-header draggable" @mousedown="onControlsMouseDown">
       <div class="controls-title" style="margin-bottom: 0;">HUD</div>
+      <button class="close-btn" @click.stop="controlsCollapsed = !controlsCollapsed">
+        {{ controlsCollapsed ? '+' : '−' }}
+      </button>
     </div>
+    <template v-if="!controlsCollapsed">
     <div class="mode-chips">
       <button
         v-for="mode in modeDefinitions"
@@ -324,6 +331,7 @@ function mapPercentY(z) {
         <button class="chat-send" style="width: 100%; border-radius: 4px; margin-top: 8px;" @click="spawnDynamicGlade(wizardName, wizardTheme, wizardProvider, wizardModel)">Spawn Project</button>
       </div>
     </template>
+    </template>
   </div>
   <div
     v-if="uiSettings.showIntel"
@@ -370,9 +378,14 @@ function mapPercentY(z) {
     </div>
   </div>
 
-  <div v-if="uiSettings.showDock" class="roster-dock panel game-panel" :style="{ opacity: uiSettings.opacity }">
-    <div class="controls-title" style="margin-bottom: 6px;">District Dock</div>
-    <div class="roster-row">
+  <div v-if="uiSettings.showDock" class="roster-dock panel game-panel" :class="{ collapsed: dockCollapsed }" :style="{ opacity: uiSettings.opacity }">
+    <div class="panel-header" style="margin-bottom: 6px;">
+      <div class="controls-title" style="margin-bottom: 0;">District Dock</div>
+      <button class="close-btn" @click.stop="dockCollapsed = !dockCollapsed">
+        {{ dockCollapsed ? '+' : '−' }}
+      </button>
+    </div>
+    <div v-if="!dockCollapsed" class="roster-row">
       <button
         v-for="(glade, idx) in gladeSlots"
         :key="glade.id"
