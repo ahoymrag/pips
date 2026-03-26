@@ -1,3 +1,4 @@
+<script setup>
 import { ref, watch } from 'vue'
 import { useScene } from '../composables/useScene.js'
 import { useDraggable } from '../composables/useDraggable.js'

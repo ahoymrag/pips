@@ -1,3 +1,4 @@
+<script setup>
 import { ref, watch, nextTick, computed } from 'vue'
 import { useScene } from '../composables/useScene.js'
 import { useApi } from '../composables/useApi.js'

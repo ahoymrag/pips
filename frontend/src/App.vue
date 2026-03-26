@@ -1,3 +1,4 @@
+<script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useScene } from './composables/useScene.js'
 import { useDraggable } from './composables/useDraggable.js'
@@ -76,6 +77,12 @@ const wizardModel = ref('claude-3-opus-20240229')
 const WORLD_SIZE = 260
 const WORLD_HALF = WORLD_SIZE / 2
 
+// Computed property to avoid comparison operators in template
+const showTutorial = computed(() => {
+  const step = onboardingStep.value
+  return step === 0 || step === 1 || step === 2 || step === 3 || step === 4
+})
+
 const gladeTrendRows = computed(() => {
   return gladeSummaries.value.map((g) => {
     const spawnPressure = Math.max(0, 1 - Math.min(1, g.nextSpawnIn / 45))
@@ -102,15 +109,16 @@ function onKeyDown(event) {
     return
   }
   const key = event.key
-  if (key < '1' || key > '9') return
-  
+  const keyCode = key.charCodeAt(0)
+  if (keyCode < 49 || keyCode > 57) return // 49='1', 57='9'
+
   // Select hotbar slot if not in build mode tool range
   const num = Number(key)
   if (num >= 1 && num <= 8) {
     selectedSlot.value = num - 1
   }
 
-  if (buildMode.value && key <= '5') {
+  if (buildMode.value && keyCode <= 53) { // 53='5'
     selectToolByKey(key)
     return
   }
@@ -163,6 +171,25 @@ function mapPercentY(z) {
 
   <div class="crosshair"></div>
 
+  <!-- Tutorial Overlay -->
+  <div v-if="showTutorial" class="tutorial-overlay">
+    <div v-if="onboardingStep === 0" class="tut-card">
+      <h2>Welcome to the Glade!</h2>
+      <p>A giant <strong>Nebula</strong> has appeared to guide you.</p>
+      <p>Watch it shrink and get ready...</p>
+    </div>
+    <div v-if="onboardingStep === 2" class="tut-card">
+      <p>Follow Nebula to the <strong>Forge Glade</strong>!</p>
+      <p>Use <strong>WASD</strong> to move and <strong>Shift</strong> to sprint.</p>
+    </div>
+    <div v-if="onboardingStep === 3" class="tut-card highlight">
+      <p>Nebula is hungry! Select the <strong>Pip Treat (5)</strong> from your hotbar and click on Nebula to feed it.</p>
+    </div>
+    <div v-if="onboardingStep === 4" class="tut-card">
+      <p>Great job! You've learned the basics.</p>
+      <button @click="onboardingStep = 5" class="action-btn">Start Orchestration</button>
+    </div>
+  </div>
 
   <!-- Minecraft Hotbar -->
   <div class="hotbar-wrap">
