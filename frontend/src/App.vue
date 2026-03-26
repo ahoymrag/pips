@@ -235,7 +235,6 @@ function mapPercentY(z) {
         {{ controlsCollapsed ? '+' : '−' }}
       </button>
     </div>
-    <template v-if="!controlsCollapsed">
     <div class="mode-chips">
       <button
         v-for="mode in modeDefinitions"
@@ -331,7 +330,6 @@ function mapPercentY(z) {
 
         <button class="chat-send" style="width: 100%; border-radius: 4px; margin-top: 8px;" @click="spawnDynamicGlade(wizardName, wizardTheme, wizardProvider, wizardModel)">Spawn Project</button>
       </div>
-    </template>
     </template>
   </div>
   <div
