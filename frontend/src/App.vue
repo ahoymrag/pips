@@ -163,25 +163,6 @@ function mapPercentY(z) {
 
   <div class="crosshair"></div>
 
-  <!-- Tutorial Overlay -->
-  <div v-if="onboardingStep < 5" class="tutorial-overlay">
-    <div v-if="onboardingStep === 0" class="tut-card">
-      <h2>Welcome to the Glade!</h2>
-      <p>A giant <strong>Nebula</strong> has appeared to guide you.</p>
-      <p>Watch it shrink and get ready...</p>
-    </div>
-    <div v-if="onboardingStep === 2" class="tut-card">
-      <p>Follow Nebula to the <strong>Forge Glade</strong>!</p>
-      <p>Use <strong>WASD</strong> to move and <strong>Shift</strong> to sprint.</p>
-    </div>
-    <div v-if="onboardingStep === 3" class="tut-card highlight">
-      <p>Nebula is hungry! Select the <strong>Pip Treat (5)</strong> from your hotbar and click on Nebula to feed it.</p>
-    </div>
-    <div v-if="onboardingStep === 4" class="tut-card">
-      <p>Great job! You've learned the basics.</p>
-      <button @click="onboardingStep = 5" class="action-btn">Start Orchestration</button>
-    </div>
-  </div>
 
   <!-- Minecraft Hotbar -->
   <div class="hotbar-wrap">
@@ -197,31 +178,6 @@ function mapPercentY(z) {
      </div>
   </div>
   
-  <div style="position: fixed; top: 16px; left: 160px; z-index: 100;">
-    <button class="council-btn" @click="showSettings = !showSettings">⚙️ Settings</button>
-  </div>
-
-  <div v-if="showSettings" class="about-overlay panel game-panel" style="z-index: 2000; width: 300px; padding: 20px;">
-    <h3 style="margin-bottom: 20px;">UI Settings</h3>
-    <div style="display: flex; flex-direction: column; gap: 15px; width: 100%; text-align: left;">
-      <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-        <input type="checkbox" v-model="uiSettings.showHud" @change="saveUiSettings" /> Show HUD (Left)
-      </label>
-      <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-        <input type="checkbox" v-model="uiSettings.showIntel" @change="saveUiSettings" /> Show District Intel (Right)
-      </label>
-      <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-        <input type="checkbox" v-model="uiSettings.showDock" @change="saveUiSettings" /> Show District Dock (Bottom)
-      </label>
-      <div style="display: flex; flex-direction: column; gap: 5px;">
-        <label>Panel Opacity: {{ Math.round(uiSettings.opacity * 100) }}%</label>
-        <input type="range" v-model.number="uiSettings.opacity" min="0.2" max="1" step="0.05" @input="saveUiSettings" />
-      </div>
-      <button class="send-btn" style="margin-top: 10px;" @click="resetAllPositions">Reset Positions</button>
-      <button class="send-btn" @click="showSettings = false">Done</button>
-    </div>
-  </div>
-
   <div
     v-if="uiSettings.showHud"
     ref="controlsPanelEl"
