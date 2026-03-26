@@ -150,8 +150,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  padding-bottom: 36px;
+  justify-content: center;
+  padding-bottom: 0;
   pointer-events: none;
 }
 
@@ -174,7 +174,7 @@ onUnmounted(() => {
   position: relative;
   display: flex;
   justify-content: center;
-  margin-bottom: 48px;
+  margin-bottom: 32px;
   width: 100%;
 }
 

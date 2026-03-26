@@ -2,8 +2,15 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { execSync } from 'node:child_process'
 
-const commitName = execSync('git log -1 --format=%s').toString().trim()
-const buildTime = new Date().toLocaleString()
+let commitName = 'latest'
+let buildTime = new Date().toLocaleString()
+
+try {
+  commitName = execSync('git log -1 --format=%s', { stdio: 'pipe' }).toString().trim()
+} catch (e) {
+  // Fallback if git is not available (e.g., on Netlify)
+  commitName = process.env.COMMIT_SHA ? process.env.COMMIT_SHA.substring(0, 7) : 'prod'
+}
 
 export default defineConfig({
   plugins: [vue()],
