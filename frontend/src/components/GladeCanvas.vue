@@ -371,6 +371,16 @@ function updateGuidePip(delta, elapsed) {
    }
    
    if (onboardingStep.value === 2) {
+      if (!camera) return
+      
+      const distToPlayer = Math.hypot(camera.position.x - guidePip.value.x, camera.position.z - guidePip.value.z)
+      
+      // Stop and wait if player is too far (force them to follow)
+      if (distToPlayer > 12) {
+         guideMesh.rotation.y += delta * 6 // Rapid spin to signal wait
+         return 
+      }
+
       const targetX = 55
       const targetZ = -35
       const dx = targetX - guidePip.value.x
@@ -378,7 +388,7 @@ function updateGuidePip(delta, elapsed) {
       const dist = Math.hypot(dx, dz)
       
       if (dist > 2) {
-         const speed = 7.0
+         const speed = 7.5
          guidePip.value.x += (dx / dist) * speed * delta
          guidePip.value.z += (dz / dist) * speed * delta
       } else {

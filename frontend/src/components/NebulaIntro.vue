@@ -154,7 +154,7 @@ onUnmounted(() => {
       <div class="intro-text">
         Welcome to Pips, your interactive portfolio and project management universe, visualized as a lush, 3D environment. <br/>
         <span style="color: #92e0ff; font-weight: 700; font-size: 11px; opacity: 0.8;">[ SYSTEM VERSION: {{ buildVersion }} ]</span><br/>
-        Here, your real-world projects—like Ahoy Indie Media and The Film Project—are represented as dynamic island worlds called Glades. Each Glade is inhabited by AI agents, or "Pips," dedicated to specific roles within your teams. You can oversee operations, brainstorm with agents, and build out your team's infrastructure all in real-time. Step into the vortex and watch your projects come to life!
+        Here, your digital projects are represented as dynamic island worlds called Glades. Each Glade is inhabited by AI agents, or "Pips," dedicated to specific roles within your teams. You can oversee operations, brainstorm with agents, and build out your team's infrastructure all in real-time. Step into the vortex and watch your projects come to life!
       </div>
       <button class="intro-skip" @click="finishIntro">Enter Network</button>
     </div>

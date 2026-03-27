@@ -177,7 +177,7 @@ function mapPercentY(z) {
       <p>Watch it shrink and get ready...</p>
     </div>
     <div v-if="onboardingStep === 2" class="tut-card">
-      <p>Follow Nebula to the <strong>Forge Glade</strong>!</p>
+      <p>Follow Nebula to the <strong>Infrastructure Forge</strong>!</p>
       <p>Use <strong>WASD</strong> to move and <strong>Shift</strong> to sprint.</p>
     </div>
     <div v-if="onboardingStep === 3" class="tut-card highlight">

@@ -470,40 +470,36 @@ export function useScene() {
 
 function seedGlades() {
   return [
-    createGlade('glade-ahoy', 'Ahoy Glade', 'ahoy', 'Flower Land', '#f2b7cf', { x: -60, z: -40 }, [
-      makePip('Sprig', '#f08aac', -66, -42, 'Cheerful and collaborative.', 'glade-ahoy'),
-      makePip('Lily', '#86dca3', -58, -35, 'Organized and supportive.', 'glade-ahoy'),
+    createGlade('glade-prod', 'Production District', 'content', 'Flower Land', '#f2b7cf', { x: -60, z: -40 }, [
+      makePip('Pistil', '#f08aac', -66, -42, 'Cheerful and collaborative.', 'glade-prod'),
+      makePip('Petal', '#86dca3', -58, -35, 'Organized and supportive.', 'glade-prod'),
     ]),
-    createGlade('glade-forge', 'Forge Glade', 'infra', 'Lava Land', '#ef9a6f', { x: 60, z: -40 }, [
+    createGlade('glade-forge', 'Infrastructure Forge', 'infra', 'Lava Land', '#ef9a6f', { x: 60, z: -40 }, [
       makePip('Cinder', '#f0805f', 56, -38, 'Fast, bold, and practical.', 'glade-forge'),
       makePip('Basalt', '#7a6262', 64, -44, 'Steady and defensive.', 'glade-forge'),
     ]),
-    createGlade('glade-amber', 'Amber Glade', 'design', 'Autumn Land', '#e0b26f', { x: -60, z: 40 }, [
+    createGlade('glade-amber', 'Design Amber', 'design', 'Autumn Land', '#e0b26f', { x: -60, z: 40 }, [
       makePip('Maple', '#d38b4d', -66, 36, 'Reflective and balanced.', 'glade-amber'),
       makePip('Acorn', '#ba8b62', -56, 45, 'Patient and detail-oriented.', 'glade-amber'),
     ]),
-    createGlade('glade-dusk', 'Dusk Glade', 'product', 'Sunset Land', '#c9a0ff', { x: 60, z: 40 }, [
+    createGlade('glade-dusk', 'Product Twilight', 'product', 'Sunset Land', '#c9a0ff', { x: 60, z: 40 }, [
       makePip('Nova', '#d58cff', 56, 44, 'Visionary and strategic.', 'glade-dusk'),
       makePip('Ray', '#ffb88f', 64, 37, 'Warm communicator and planner.', 'glade-dusk'),
     ]),
-    createGlade('glade-frost', 'Frost Glade', 'research', 'Mist Land', '#9ec9ef', { x: 0, z: -70 }, [
+    createGlade('glade-frost', 'Research Frost', 'research', 'Mist Land', '#9ec9ef', { x: 0, z: -70 }, [
       makePip('Drift', '#8abbe8', -4, -74, 'Analytical and curious.', 'glade-frost'),
       makePip('Halo', '#b0d8ff', 4, -66, 'Calm and evidence-driven.', 'glade-frost'),
     ]),
-    createGlade('glade-wild', 'Wildcard Glade', 'experiments', 'Meadow Land', '#a8db92', { x: 0, z: 70 }, [
+    createGlade('glade-wild', 'Experimental Meadow', 'experiments', 'Meadow Land', '#a8db92', { x: 0, z: 70 }, [
       makePip('Moss', '#84c677', 2, 68, 'Playful and experimental.', 'glade-wild'),
     ]),
-    createGlade('glade-ahoy-media', 'Ahoy Indie Media', 'ahoy-media', 'Media Land', '#f8a5c2', { x: -120, z: 0 }, [
-      makePip('Director', '#f78fb3', -122, -2, 'Creative and visionary.', 'glade-ahoy-media'),
-      makePip('Editor', '#e77f98', -118, 5, 'Detail-oriented and focused.', 'glade-ahoy-media'),
+    createGlade('glade-web', 'Web Services Hub', 'web', 'Cyber Land', '#63cdda', { x: 120, z: 0 }, [
+      makePip('Admin', '#3dc1d3', 118, 3, 'Vigilant and precise.', 'glade-web'),
+      makePip('Builder', '#1e90ff', 123, -5, 'Logical and efficient.', 'glade-web'),
     ]),
-    createGlade('glade-cpc', 'CPC Web Admin', 'cpc', 'Cyber Land', '#63cdda', { x: 120, z: 0 }, [
-      makePip('SysAdmin', '#3dc1d3', 118, 3, 'Vigilant and precise.', 'glade-cpc'),
-      makePip('Dev', '#1e90ff', 123, -5, 'Logical and efficient.', 'glade-cpc'),
-    ]),
-    createGlade('glade-film', 'The Film Project', 'film', 'Cinema Land', '#f5cd79', { x: 0, z: 120 }, [
-      makePip('Writer', '#f19066', -3, 118, 'Imaginative and poetic.', 'glade-film'),
-      makePip('Producer', '#c44569', 4, 122, 'Driven and practical.', 'glade-film'),
+    createGlade('glade-media', 'Media Collective', 'media', 'Media Land', '#f8a5c2', { x: -120, z: 0 }, [
+      makePip('Frame', '#f78fb3', -122, -2, 'Creative and visionary.', 'glade-media'),
+      makePip('Script', '#e77f98', -118, 5, 'Detail-oriented and focused.', 'glade-media'),
     ]),
   ]
 }
