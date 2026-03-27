@@ -21,6 +21,7 @@ const keys = {
   shift: false,
   up: false,
   down: false,
+  crouch: false,
 }
 
 let isLocked = false
@@ -28,6 +29,10 @@ let lookDragActive = false
 let yaw = 0
 let pitch = 0
 let moveTime = 0
+let currentEyeHeight = EYE_HEIGHT
+let jumpTime = 0
+let handGroup = null
+let handBob = 0
 
 export function createCamera(renderer, domElement) {
   camera = new THREE.PerspectiveCamera(
@@ -50,11 +55,27 @@ export function createCamera(renderer, domElement) {
   
   document.addEventListener('pointerlockchange', () => {
     isLocked = document.pointerLockElement === domElement
+    if (isLocked) {
+      document.body.classList.add('pointer-locked')
+    } else {
+      document.body.classList.remove('pointer-locked')
+    }
   })
+
+  // Create Hand Viewmodel (Minecraft style)
+  handGroup = new THREE.Group()
+  const handGeo = new THREE.BoxGeometry(0.12, 0.12, 0.4)
+  const handMat = new THREE.MeshStandardMaterial({ color: 0xe8c0d8, roughness: 0.7 })
+  const handMesh = new THREE.Mesh(handGeo, handMat)
+  handMesh.position.set(0.35, -0.25, -0.5)
+  handMesh.rotation.set(-0.1, 0.1, 0)
+  handGroup.add(handMesh)
+  camera.add(handGroup)
 
   document.addEventListener('mousemove', onMouseMove)
   document.addEventListener('keydown', onKeyDown)
   document.addEventListener('keyup', onKeyUp)
+  document.addEventListener('mousedown', onMouseDown)
 
   return camera
 }
@@ -141,20 +162,33 @@ export function updateCamera(delta, options = {}) {
     velocity.y += verticalTarget * riseSpeed * delta
     velocity.y *= Math.max(0, 1 - 5.5 * delta)
     camera.position.y += velocity.y * delta
-    camera.position.y = THREE.MathUtils.clamp(camera.position.y, 1.2, 18)
+    camera.position.y = THREE.MathUtils.clamp(camera.position.y, 1.2, 45) // Higher ceiling for playful
   }
 
   // Clamp bounds
   camera.position.x = THREE.MathUtils.clamp(camera.position.x, -130, 130)
   camera.position.z = THREE.MathUtils.clamp(camera.position.z, -130, 130)
 
-  // Gravity + trampoline bounce in grounded modes
+  // Gravity + trampoline bounce + jumping in grounded modes
   if (!playful) {
+    // Crouch logic
+    const targetEyeHeight = keys.crouch ? EYE_HEIGHT * 0.8 : EYE_HEIGHT
+    currentEyeHeight += (targetEyeHeight - currentEyeHeight) * Math.min(1, delta * 12)
+
     // Apply gravity
-    velocity.y -= 22 * delta
+    velocity.y -= 32 * delta // Stronger gravity for punchier feeling
 
     // Ground collision
-    if (camera.position.y + velocity.y * delta <= EYE_HEIGHT) {
+    const grounded = camera.position.y <= currentEyeHeight + 0.05
+    
+    // Jump trigger
+    if (keys.up && grounded && jumpTime <= 0) {
+      velocity.y = 8.5 // Jump strength
+      jumpTime = 0.2 // Cooldown
+    }
+    if (jumpTime > 0) jumpTime -= delta
+
+    if (camera.position.y + velocity.y * delta <= currentEyeHeight) {
       // Check if we're on a trampoline
       let onTrampoline = false
       for (const pad of trampolinePads) {
@@ -171,25 +205,26 @@ export function updateCamera(delta, options = {}) {
         velocity.y = Math.max(12, Math.abs(velocity.y) * 1.1)
       } else {
         velocity.y = 0
-        camera.position.y = EYE_HEIGHT
+        camera.position.y = currentEyeHeight
       }
     }
 
     camera.position.y += velocity.y * delta
-    if (camera.position.y < EYE_HEIGHT) camera.position.y = EYE_HEIGHT
+    if (camera.position.y < currentEyeHeight) {
+      camera.position.y = currentEyeHeight
+      velocity.y = 0
+    }
 
     // Head bob only when grounded
-    const grounded = camera.position.y <= EYE_HEIGHT + 0.01
-    const isMoving = grounded && direction.lengthSq() > 0 && (keys.forward || keys.backward || keys.left || keys.right)
-    if (isMoving) {
+    const movingGrounded = grounded && direction.lengthSq() > 0 && (keys.forward || keys.backward || keys.left || keys.right)
+    if (movingGrounded) {
       moveTime += delta * (keys.shift ? 14 : 10)
     } else {
-      moveTime *= 0.9
+      moveTime *= 0.95
     }
-    if (grounded) {
-      const bobAmount = Math.sin(moveTime) * 0.04 * (isMoving ? 1 : 0)
-      camera.position.y = Math.max(camera.position.y, EYE_HEIGHT + bobAmount)
-    }
+    
+    const bobAmount = Math.sin(moveTime) * 0.04 * (movingGrounded ? 1 : 0)
+    camera.position.y = Math.max(camera.position.y, currentEyeHeight + bobAmount)
   }
 
   // FOV tuning: stronger playful boost
@@ -203,6 +238,27 @@ export function updateCamera(delta, options = {}) {
     euler.setFromQuaternion(camera.quaternion)
     euler.z += (targetRoll - euler.z) * Math.min(1, delta * 8)
     camera.quaternion.setFromEuler(euler)
+  }
+
+  // Update Hand Viewmodel
+  if (handGroup) {
+    const moving = direction.lengthSq() > 0
+    if (moving) {
+      handBob += delta * (keys.shift ? 16 : 10)
+    } else {
+      handBob *= 0.94
+    }
+    
+    const bobX = Math.cos(handBob * 0.5) * 0.02
+    const bobY = Math.sin(handBob) * 0.02
+    const bobZ = Math.sin(handBob * 0.5) * 0.015
+    
+    // Apply sprint tilt to hand
+    const sprintLean = keys.shift ? -0.1 : 0
+    handGroup.position.set(bobX, bobY, bobZ + sprintLean)
+    
+    // Smoothly hide hand if not locked? No, keep it for coolness.
+    handGroup.visible = true 
   }
 
   camera.updateProjectionMatrix()
@@ -246,6 +302,11 @@ function onKeyDown(e) {
     case 'Space': keys.up = true; break
     case 'ControlLeft':
     case 'ControlRight': keys.down = true; break
+    case 'KeyC':
+    case 'KeyX': keys.crouch = true; break
+    case 'KeyE':
+      if (document.pointerLockElement) document.exitPointerLock()
+      break
     case 'KeyL':
       requestCursorLock()
       break
@@ -263,6 +324,8 @@ function onKeyUp(e) {
     case 'Space': keys.up = false; break
     case 'ControlLeft':
     case 'ControlRight': keys.down = false; break
+    case 'KeyC':
+    case 'KeyX': keys.crouch = false; break
   }
 }
 

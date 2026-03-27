@@ -489,6 +489,13 @@ canvas {
   transform: translate(-50%, -50%);
   z-index: 400;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  mix-blend-mode: difference; /* Better visibility */
+}
+
+body.pointer-locked .crosshair {
+  opacity: 1;
 }
 
 .crosshair::before,

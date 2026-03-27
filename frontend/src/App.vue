@@ -110,11 +110,9 @@ function onKeyDown(event) {
   }
   const key = event.key
   const keyCode = key.charCodeAt(0)
-  if (keyCode < 49 || keyCode > 57) return // 49='1', 57='9'
-
-  // Select hotbar slot if not in build mode tool range
+  // Select hotbar slot
   const num = Number(key)
-  if (num >= 1 && num <= 8) {
+  if (num >= 1 && num <= 9) {
     selectedSlot.value = num - 1
   }
 
@@ -238,9 +236,10 @@ function mapPercentY(z) {
       <span class="keycap key-d">D</span>
     </div>
     <div class="control-line"><span class="keycap key-wide">Shift</span> Sprint</div>
-    <div class="control-line"><span class="keycap key-wide">Click</span> Select</div>
-    <div class="control-line"><span class="keycap key-wide">RMB</span> Look</div>
-    <div class="control-line"><span class="keycap key-wide">1-9</span> Jump</div>
+    <div class="control-line"><span class="keycap key-wide">Space</span> Jump</div>
+    <div class="control-line"><span class="keycap key-wide">Ctrl/C</span> Crouch</div>
+    <div class="control-line"><span class="keycap key-wide">E</span> Release</div>
+    <div class="control-line"><span class="keycap key-wide">1-9</span> Slots</div>
     <div class="control-line"><span class="keycap key-wide">Tab</span> Modes</div>
 
     <template v-if="currentMode === 'explore'">
