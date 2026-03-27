@@ -14,6 +14,7 @@ let startMs = 0
 
 const buildTime = __BUILD_TIME__
 const commitName = __COMMIT_NAME__
+const buildVersion = `v0.1.0-${commitName.substring(0, 7)}`
 
 const INTRO_MS = 5600
 
@@ -111,7 +112,8 @@ onUnmounted(() => {
 <template>
   <div class="intro-wrap">
     <div class="build-info">
-      BUILD: {{ buildTime }} | {{ commitName }}
+      <span class="glitch-text" :data-text="buildVersion">SYSTEM BUILD: {{ buildVersion }}</span>
+      <span class="build-meta">// {{ buildTime }} // {{ commitName }}</span>
     </div>
     <div ref="container" class="intro-canvas"></div>
     <div class="intro-overlay" @click="finishIntro">
@@ -150,7 +152,9 @@ onUnmounted(() => {
       </div>
 
       <div class="intro-text">
-        Welcome to Pips, your interactive portfolio and project management universe, visualized as a lush, 3D environment. Here, your real-world projects—like Ahoy Indie Media and The Film Project—are represented as dynamic island worlds called Glades. Each Glade is inhabited by AI agents, or "Pips," dedicated to specific roles within your teams. You can oversee operations, brainstorm with agents, and build out your team's infrastructure all in real-time. Step into the vortex and watch your projects come to life!
+        Welcome to Pips, your interactive portfolio and project management universe, visualized as a lush, 3D environment. <br/>
+        <span style="color: #92e0ff; font-weight: 700; font-size: 11px; opacity: 0.8;">[ SYSTEM VERSION: {{ buildVersion }} ]</span><br/>
+        Here, your real-world projects—like Ahoy Indie Media and The Film Project—are represented as dynamic island worlds called Glades. Each Glade is inhabited by AI agents, or "Pips," dedicated to specific roles within your teams. You can oversee operations, brainstorm with agents, and build out your team's infrastructure all in real-time. Step into the vortex and watch your projects come to life!
       </div>
       <button class="intro-skip" @click="finishIntro">Enter Network</button>
     </div>
@@ -188,16 +192,32 @@ onUnmounted(() => {
 
 .build-info {
   position: fixed;
-  top: 12px;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  font-size: 8.5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.glitch-text {
+  font-size: 11px;
+  color: #fff;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  letter-spacing: 2px;
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(180, 160, 255, 0.8);
+}
+
+.build-meta {
+  font-size: 9px;
   color: rgba(180, 160, 255, 0.4);
   font-family: 'JetBrains Mono', 'Courier New', monospace;
   letter-spacing: 1px;
   text-transform: uppercase;
-  z-index: 1000;
-  pointer-events: none;
   white-space: nowrap;
 }
 
