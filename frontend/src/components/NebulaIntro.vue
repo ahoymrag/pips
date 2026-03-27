@@ -31,10 +31,10 @@ function animate(now) {
     points.rotation.y += 0.00035
   }
 
-  const speed = 0.16 + t * 1.55
+  const speed = 0.5 + t * 6.5
   if (camera) {
     camera.position.z -= speed
-    camera.fov = 65 + t * 24
+    camera.fov = 65 + t * 55
     camera.updateProjectionMatrix()
   }
 
@@ -114,7 +114,7 @@ onUnmounted(() => {
       BUILD: {{ buildTime }} | {{ commitName }}
     </div>
     <div ref="container" class="intro-canvas"></div>
-    <div class="intro-overlay">
+    <div class="intro-overlay" @click="finishIntro">
 
       <!-- ═══ ASIAN GRAPHIC LAYERS ═══ -->
       <!-- Layer A: Far background – giant watermark kanji, drifting -->
@@ -182,7 +182,8 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .build-info {
