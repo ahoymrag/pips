@@ -588,9 +588,18 @@ body.pointer-locked .crosshair {
   text-overflow: ellipsis;
 }
 
-.slot-empty {
+.slot-theme {
   font-size: 10px;
   opacity: 0.65;
+}
+
+.slot-action {
+  font-size: 8px;
+  margin-top: 2px;
+  color: #a0c8f8;
+  text-transform: uppercase;
+  font-weight: 700;
+  opacity: 0.8;
 }
 
 /* === Scrollbar === */

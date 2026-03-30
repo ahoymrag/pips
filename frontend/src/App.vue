@@ -133,16 +133,20 @@ function onKeyDown(event) {
   }
   const key = event.key
   const keyCode = key.charCodeAt(0)
-  // Select hotbar slot
   const num = Number(key)
+
+  // 1-9 handling: Context-dependent
   if (num >= 1 && num <= 9) {
-    selectedSlot.value = num - 1
+    if (buildMode.value && num <= 5) {
+      // Build tool selection
+      selectToolByKey(key)
+    } else {
+      // Hotbar selection
+      selectedSlot.value = num - 1
+    }
+    return
   } else if (key === '0') {
     selectedSlot.value = 9
-  }
-
-  if (buildMode.value && keyCode <= 53) { // 53='5'
-    selectToolByKey(key)
     return
   }
   if (key === 'f' || key === 'F') {
@@ -156,11 +160,6 @@ function onKeyDown(event) {
       hydratePip(nearbyPip.value.id)
       return
     }
-  }
-
-  const glade = selectGladeSlot(Number(key) - 1)
-  if (glade) {
-    teleportNearTarget(glade.center.x, glade.center.z)
   }
 }
 
@@ -438,9 +437,9 @@ function mapPercentY(z) {
         :class="{ active: activeGlade?.id === glade.id }"
         @click="onSelectGladeSlot(idx)"
       >
-        <span class="slot-key">{{ idx + 1 }}</span>
         <span class="slot-name">{{ glade.name }}</span>
-        <span class="slot-empty">{{ glade.theme }}</span>
+        <span class="slot-theme">{{ glade.theme }}</span>
+        <span class="slot-action">Visit District</span>
       </button>
     </div>
   </div>
