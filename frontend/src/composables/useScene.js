@@ -43,6 +43,7 @@ const onboardingStep = ref(0) // 0: Start, 1: Shrinking, 2: Tour, 3: Arrival, 4:
 const guidePip = ref({ id: 'guide', name: 'Nebula', color: '#c9a0ff', x: 13.5, z: 13.5, size: 5, targetX: 13.5, targetZ: 13.5 })
 const floatingTexts = ref([])
 const toast = ref(null) // { id, text }
+const fxPulse = ref(0) // increments to trigger UI pulse/sfx
 
 let nextFarmPipId = 1000
 const gladeSlots = ref(seedGlades())
@@ -224,6 +225,10 @@ export function useScene() {
     }, ms)
   }
 
+  function triggerFxPulse() {
+    fxPulse.value++
+  }
+
   function grantSmallGift(pip, reason = 'care') {
     const gifts = [
       { id: 'gift_glimmer', label: 'Glimmer Pebble', icon: '✨', type: 'gift' },
@@ -242,6 +247,7 @@ export function useScene() {
       triggerInteractionText(pip.position_x, pip.position_z, `${gift.icon} ${gift.label}`, '#ffd8ff')
     }
     showToast(`Gift received: ${gift.icon} ${gift.label}`)
+    triggerFxPulse()
     return gift
   }
 
@@ -478,6 +484,7 @@ export function useScene() {
 
       // Extra-cute reaction animation
       import('../three/pips.js').then((m) => m.triggerPipReaction?.(pipId, 'feed'))
+      triggerFxPulse()
 
       if (onboardingStep.value === 3) onboardingStep.value = 4
       return true
@@ -500,6 +507,7 @@ export function useScene() {
 
       // Extra-cute reaction animation
       import('../three/pips.js').then((m) => m.triggerPipReaction?.(pipId, 'hydrate'))
+      triggerFxPulse()
 
       return true
     }
@@ -594,6 +602,8 @@ export function useScene() {
     floatingTexts,
     toast,
     showToast,
+    fxPulse,
+    triggerFxPulse,
     nextOnboarding,
     removePip,
     removeFarmBlock,

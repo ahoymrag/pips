@@ -35,6 +35,9 @@ const terminalHistory = ref([
 
 const inputRef = ref(null)
 const historyRef = ref(null)
+const cmdHistory = ref([])
+const cmdHistoryIdx = ref(-1)
+const pendingDraft = ref('')
 
 function focusInput() {
   inputRef.value?.focus()
@@ -58,35 +61,77 @@ async function handleCommand() {
   const fullCmd = userInput.value.trim()
   if (!fullCmd) return
   
+  cmdHistory.value.push(fullCmd)
+  cmdHistoryIdx.value = -1
+  pendingDraft.value = ''
+
   terminalHistory.value.push({ type: 'user', content: fullCmd })
   const [cmd, ...args] = fullCmd.split(' ')
   userInput.value = ''
 
   const findPipById = (pipId) => pips.value.find((p) => p.id === pipId) || null
   const formatPip = (p) => `${p.name} [${p.id}] Lv.${p.level || 1} (${p.provider || 'glade'}/${p.model || 'native'}) @${p.gladeId}`
+  const escapeHtml = (s) =>
+    String(s)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;')
+
+  const helpFor = (name) => {
+    switch ((name || '').toLowerCase()) {
+      case 'agents':
+        return 'agents [--json]  - List all pips across all glades (use --json for copy/paste)'
+      case 'select':
+        return 'select [pip_id]  - Select a pip (opens overlay target)'
+      case 'talk':
+        return 'talk [pip_id]    - Select a pip and open chat'
+      case 'feed':
+        return 'feed [pip_id]    - Feed a pip (gift + reaction)'
+      case 'hydrate':
+        return 'hydrate [pip_id] - Hydrate a pip (gift + reaction)'
+      case 'hat':
+        return 'hat [pip_id] [wizard_hat|hard_hat|beret|crown]  - Equip a hat'
+      case 'rm':
+        return 'rm [pip_id] [--force]  - Remove a pip (requires --force)'
+      case 'goto':
+        return 'goto [pip_id]    - Teleport near a pip'
+      case 'mode':
+        return 'mode [explore|build|playful|wizard|about]  - Set mode'
+      case 'ls':
+        return 'ls               - List pips in active glade'
+      default:
+        return 'help [cmd]        - Show command help (e.g. help agents)'
+    }
+  }
 
   switch (cmd.toLowerCase()) {
     case 'help':
-      terminalHistory.value.push({ type: 'system', content: 'Available commands:' })
-      terminalHistory.value.push({ type: 'system', content: '  ls                 - List pips in active glade' })
-      terminalHistory.value.push({ type: 'system', content: '  agents             - List ALL pips across all glades' })
-      terminalHistory.value.push({ type: 'system', content: '  cd [index]         - Select glade by index (1-8)' })
-      terminalHistory.value.push({ type: 'system', content: '  pip [name] [color] - Create a new pip here' })
-      terminalHistory.value.push({ type: 'system', content: '  rm [pip_id]        - Remove a pip by ID' })
-      terminalHistory.value.push({ type: 'system', content: '  select [pip_id]    - Select pip (opens Pip overlay)' })
-      terminalHistory.value.push({ type: 'system', content: '  talk [pip_id]      - Select pip and open chat' })
-      terminalHistory.value.push({ type: 'system', content: '  feed [pip_id]      - Feed a pip' })
-      terminalHistory.value.push({ type: 'system', content: '  hydrate [pip_id]   - Hydrate a pip' })
-      terminalHistory.value.push({ type: 'system', content: '  hat [pip_id] [id]  - Equip hat: wizard_hat|hard_hat|beret|crown' })
-      terminalHistory.value.push({ type: 'system', content: '  mode [id]          - Set mode: explore|build|playful|wizard|about' })
-      terminalHistory.value.push({ type: 'system', content: '  goto [pip_id]      - Teleport near pip' })
-      terminalHistory.value.push({ type: 'system', content: '  glade [name] [theme] - Create a new dynamic glade' })
-      terminalHistory.value.push({ type: 'system', content: '  build [type] [x] [z] - Place a farm block' })
-      terminalHistory.value.push({ type: 'system', content: '  tp [x] [z]         - Teleport to world coordinates' })
-      terminalHistory.value.push({ type: 'system', content: '  whoami             - Show current session info' })
-      terminalHistory.value.push({ type: 'system', content: '  claude [prompt]    - Ask The Architect to modify the world' })
-      terminalHistory.value.push({ type: 'system', content: '  clear              - Clear terminal history' })
-      terminalHistory.value.push({ type: 'system', content: '  exit               - Close terminal' })
+      if (args[0]) {
+        terminalHistory.value.push({ type: 'system', content: helpFor(args[0]) })
+      } else {
+        terminalHistory.value.push({ type: 'system', content: 'Available commands:' })
+        terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('ls') })
+        terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('agents') })
+        terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('select') })
+        terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('talk') })
+        terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('feed') })
+        terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('hydrate') })
+        terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('hat') })
+        terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('goto') })
+        terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('mode') })
+        terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('rm') })
+        terminalHistory.value.push({ type: 'system', content: '  cd [index]         - Select glade by index (1-8)' })
+        terminalHistory.value.push({ type: 'system', content: '  pip [name] [color] - Create a new pip here' })
+        terminalHistory.value.push({ type: 'system', content: '  glade [name] [theme] - Create a new dynamic glade' })
+        terminalHistory.value.push({ type: 'system', content: '  build [type] [x] [z] - Place a farm block' })
+        terminalHistory.value.push({ type: 'system', content: '  tp [x] [z]         - Teleport to world coordinates' })
+        terminalHistory.value.push({ type: 'system', content: '  whoami             - Show current session info' })
+        terminalHistory.value.push({ type: 'system', content: '  claude [prompt]    - Ask The Architect to modify the world' })
+        terminalHistory.value.push({ type: 'system', content: '  clear              - Clear terminal history' })
+        terminalHistory.value.push({ type: 'system', content: '  exit               - Close terminal' })
+      }
       break
 
     case 'ls':
@@ -102,6 +147,25 @@ async function handleCommand() {
       break
 
     case 'agents': {
+      const asJson = args.includes('--json')
+      if (asJson) {
+        const payload = pips.value.map((p) => ({
+          id: p.id,
+          name: p.name,
+          gladeId: p.gladeId,
+          provider: p.provider,
+          model: p.model,
+          level: p.level,
+          status: p.status,
+          position_x: p.position_x,
+          position_z: p.position_z,
+        }))
+        terminalHistory.value.push({
+          type: 'system',
+          content: `<pre style="white-space: pre-wrap; margin: 0;">${escapeHtml(JSON.stringify(payload, null, 2))}</pre>`,
+        })
+        break
+      }
       terminalHistory.value.push({ type: 'system', content: 'All agents (pips):' })
       const byGlade = new Map()
       for (const p of pips.value) {
@@ -153,11 +217,22 @@ async function handleCommand() {
       break
 
     case 'rm':
-      const id = args[0]
-      if (removePip(id)) {
-        terminalHistory.value.push({ type: 'system', content: `Pip ${id} removed successfully.` })
-      } else {
-        terminalHistory.value.push({ type: 'error', content: `Pip ${id} not found.` })
+      {
+        const force = args.includes('--force')
+        const id = args.find((a) => a !== '--force')
+        if (!id) {
+          terminalHistory.value.push({ type: 'error', content: 'Usage: rm [pip_id] --force' })
+          break
+        }
+        if (!force) {
+          terminalHistory.value.push({ type: 'error', content: `Refusing to remove ${id}. Re-run: rm ${id} --force` })
+          break
+        }
+        if (removePip(id)) {
+          terminalHistory.value.push({ type: 'system', content: `Pip ${id} removed successfully.` })
+        } else {
+          terminalHistory.value.push({ type: 'error', content: `Pip ${id} not found.` })
+        }
       }
       break
 
@@ -309,6 +384,33 @@ async function handleCommand() {
   scrollToBottom()
 }
 
+function onInputKeydown(event) {
+  if (event.key === 'ArrowUp') {
+    if (cmdHistory.value.length === 0) return
+    event.preventDefault()
+    if (cmdHistoryIdx.value === -1) {
+      pendingDraft.value = userInput.value
+      cmdHistoryIdx.value = cmdHistory.value.length - 1
+    } else {
+      cmdHistoryIdx.value = Math.max(0, cmdHistoryIdx.value - 1)
+    }
+    userInput.value = cmdHistory.value[cmdHistoryIdx.value] || ''
+    nextTick(() => inputRef.value?.setSelectionRange?.(userInput.value.length, userInput.value.length))
+  } else if (event.key === 'ArrowDown') {
+    if (cmdHistory.value.length === 0) return
+    if (cmdHistoryIdx.value === -1) return
+    event.preventDefault()
+    cmdHistoryIdx.value++
+    if (cmdHistoryIdx.value >= cmdHistory.value.length) {
+      cmdHistoryIdx.value = -1
+      userInput.value = pendingDraft.value
+    } else {
+      userInput.value = cmdHistory.value[cmdHistoryIdx.value] || ''
+    }
+    nextTick(() => inputRef.value?.setSelectionRange?.(userInput.value.length, userInput.value.length))
+  }
+}
+
 async function callClaude(prompt) {
   try {
     const response = await fetch('http://localhost:8000/api/agents/terminal-agent/chat', {
@@ -395,6 +497,7 @@ async function callClaude(prompt) {
             spellcheck="false"
             autofocus
             @keydown.enter="handleCommand"
+            @keydown="onInputKeydown"
             @keydown.esc="toggleTerminal"
           />
           <div class="cursor-block"></div>
@@ -444,6 +547,7 @@ async function callClaude(prompt) {
             spellcheck="false"
             autofocus
             @keydown.enter="handleCommand"
+            @keydown="onInputKeydown"
             @keydown.esc="toggleTerminal"
           />
           <div class="cursor-block"></div>

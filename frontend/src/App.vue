@@ -26,6 +26,8 @@ const uiSettings = ref({
   showDock: true,
   showTerminal: true,
   terminalDocked: true,
+  sfx: false,
+  vignettePulse: false,
   opacity: 0.75,
 })
 
@@ -77,6 +79,10 @@ const {
   hydratePip,
   floatingTexts,
   toast,
+  fxPulse,
+  pips,
+  selectPip,
+  openChat,
 } = useScene()
 const chatWindow = ref(null)
 const introVisible = ref(true)
@@ -244,6 +250,46 @@ const selectedItemHint = computed(() => {
   if (item.type === 'food') return 'Click a Pip to feed'
   return 'Click to use'
 })
+
+const localAgents = computed(() => pips.value.filter((p) => p.gladeId === activeGlade.value?.id))
+
+function talkToPip(pip) {
+  selectPip(pip)
+  openChat()
+}
+
+function playUiBlip() {
+  // lightweight, no assets; gated by uiSettings.sfx
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const o = ctx.createOscillator()
+    const g = ctx.createGain()
+    o.type = 'triangle'
+    o.frequency.value = 660
+    g.gain.value = 0.0001
+    o.connect(g)
+    g.connect(ctx.destination)
+    o.start()
+    g.gain.exponentialRampToValueAtTime(0.04, ctx.currentTime + 0.01)
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.11)
+    o.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08)
+    o.stop(ctx.currentTime + 0.12)
+    o.onended = () => ctx.close()
+  } catch (e) {}
+}
+
+const pulseKey = ref(0)
+watch(
+  () => fxPulse.value,
+  () => {
+    if (uiSettings.value.vignettePulse) {
+      pulseKey.value++
+    }
+    if (uiSettings.value.sfx) {
+      playUiBlip()
+    }
+  }
+)
 </script>
 
 <template>
@@ -479,6 +525,16 @@ const selectedItemHint = computed(() => {
   <div v-if="uiSettings.showDock" class="roster-dock panel game-panel" :class="{ collapsed: dockCollapsed }" :style="{ opacity: uiSettings.opacity }">
     <div class="panel-header" style="margin-bottom: 6px;">
       <div class="controls-title" style="margin-bottom: 0;">District Dock</div>
+      <div style="display:flex; gap:8px; align-items:center; margin-left:auto; margin-right:10px;">
+        <label style="font-size: 11px; opacity: 0.85; display:flex; align-items:center; gap:6px; cursor:pointer;">
+          <input type="checkbox" v-model="uiSettings.sfx" @change="saveUiSettings" />
+          SFX
+        </label>
+        <label style="font-size: 11px; opacity: 0.85; display:flex; align-items:center; gap:6px; cursor:pointer;">
+          <input type="checkbox" v-model="uiSettings.vignettePulse" @change="saveUiSettings" />
+          Pulse
+        </label>
+      </div>
       <button class="close-btn" @click.stop="dockCollapsed = !dockCollapsed">
         {{ dockCollapsed ? '+' : '−' }}
       </button>
@@ -495,6 +551,32 @@ const selectedItemHint = computed(() => {
         <span class="slot-theme">{{ glade.theme }}</span>
         <span class="slot-action">Visit District</span>
       </button>
+    </div>
+
+    <div v-if="!dockCollapsed" style="margin-top: 10px;">
+      <div class="controls-title" style="margin-bottom: 6px;">Agents Here</div>
+      <div v-if="localAgents.length === 0" style="opacity: 0.6; font-size: 12px;">No agents in this district.</div>
+      <div v-else style="display:flex; flex-direction:column; gap:6px;">
+        <div
+          v-for="pip in localAgents.slice(0, 6)"
+          :key="pip.id"
+          style="display:flex; align-items:center; gap:8px; background: rgba(0,0,0,0.18); padding: 6px 8px; border-radius: 8px;"
+        >
+          <span class="prompt-dot" :style="{ backgroundColor: pip.color || '#e06060', width:'10px', height:'10px', borderRadius:'50%' }"></span>
+          <div style="flex:1; min-width: 0;">
+            <div style="font-size: 12px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              {{ pip.name }}
+            </div>
+            <div style="font-size: 10px; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              {{ pip.provider || 'glade' }} / {{ pip.model || 'native' }}
+            </div>
+          </div>
+          <button class="send-btn" style="padding: 6px 10px;" @click="talkToPip(pip)">Talk</button>
+        </div>
+        <div v-if="localAgents.length > 6" style="font-size: 11px; opacity: 0.65;">
+          (+{{ localAgents.length - 6 }} more — use terminal `agents`)
+        </div>
+      </div>
     </div>
   </div>
 
@@ -513,6 +595,12 @@ const selectedItemHint = computed(() => {
   <div v-if="toast" class="gift-toast">
     {{ toast.text }}
   </div>
+
+  <div
+    v-if="uiSettings.vignettePulse"
+    class="fx-vignette"
+    :key="pulseKey"
+  ></div>
 </template>
 
 <style scoped>
@@ -537,6 +625,23 @@ const selectedItemHint = computed(() => {
 @keyframes toast-pop {
   from { transform: translateX(-50%) translateY(8px) scale(0.98); opacity: 0; }
   to { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+}
+
+.fx-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 900;
+  background:
+    radial-gradient(circle at 50% 65%, rgba(255, 200, 240, 0.10), rgba(0,0,0,0) 45%),
+    radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 40%, rgba(255, 130, 200, 0.18) 70%, rgba(0,0,0,0.45) 100%);
+  animation: vignette-pulse 0.35s ease-out;
+}
+
+@keyframes vignette-pulse {
+  from { opacity: 0; filter: blur(1px) saturate(1.1); }
+  35% { opacity: 1; filter: blur(0px) saturate(1.25); }
+  to { opacity: 0; filter: blur(1px) saturate(1.1); }
 }
 
 .about-overlay {
