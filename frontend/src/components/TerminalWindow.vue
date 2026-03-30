@@ -45,6 +45,15 @@ function focusInput() {
   inputRef.value?.focus()
 }
 
+function onTerminalHover() {
+  // Hover-to-type UX: focus terminal input when cursor enters the terminal panel.
+  // Avoid stealing focus if user is actively typing in another input/textarea elsewhere.
+  if (!terminalOpen.value) return
+  const el = document.activeElement
+  if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return
+  nextTick(() => focusInput())
+}
+
 watch(terminalOpen, (isOpen) => {
   if (isOpen) {
     nextTick(() => focusInput())
@@ -537,7 +546,13 @@ async function callClaude(prompt) {
 <template>
   <template v-if="visible">
     <!-- Docked / embedded mode -->
-    <div v-if="docked" class="terminal-docked panel" :class="{ collapsed: !terminalOpen }" @click.stop>
+    <div
+      v-if="docked"
+      class="terminal-docked panel"
+      :class="{ collapsed: !terminalOpen }"
+      @click.stop
+      @mouseenter="onTerminalHover"
+    >
       <div class="terminal-header" @mousedown="$emit('drag-start')">
         <div class="header-led"></div>
         <div class="header-title">PIPS_TERMINAL_ROOT@THE_GLADE</div>
@@ -587,7 +602,7 @@ async function callClaude(prompt) {
       class="terminal-overlay"
       @click.self="toggleTerminal"
     >
-      <div class="terminal-container" @click.stop>
+      <div class="terminal-container" @click.stop @mouseenter="onTerminalHover">
         <div class="terminal-header" @mousedown="$emit('drag-start')">
           <div class="header-led"></div>
           <div class="header-title">PIPS_TERMINAL_ROOT@THE_GLADE</div>
