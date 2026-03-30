@@ -2,6 +2,11 @@
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { useScene } from '../composables/useScene.js'
 
+const props = defineProps({
+  docked: { type: Boolean, default: true },
+  visible: { type: Boolean, default: true },
+})
+
 const { 
   terminalOpen, 
   toggleTerminal, 
@@ -12,7 +17,13 @@ const {
   spawnDynamicGlade,
   removePip,
   placeFarmBlock,
-  createPip
+  createPip,
+  selectPip,
+  openChat,
+  feedPip,
+  hydratePip,
+  equipHat,
+  setMode,
 } = useScene()
 
 const userInput = ref('')
@@ -51,13 +62,24 @@ async function handleCommand() {
   const [cmd, ...args] = fullCmd.split(' ')
   userInput.value = ''
 
+  const findPipById = (pipId) => pips.value.find((p) => p.id === pipId) || null
+  const formatPip = (p) => `${p.name} [${p.id}] Lv.${p.level || 1} (${p.provider || 'glade'}/${p.model || 'native'}) @${p.gladeId}`
+
   switch (cmd.toLowerCase()) {
     case 'help':
       terminalHistory.value.push({ type: 'system', content: 'Available commands:' })
       terminalHistory.value.push({ type: 'system', content: '  ls                 - List pips in active glade' })
+      terminalHistory.value.push({ type: 'system', content: '  agents             - List ALL pips across all glades' })
       terminalHistory.value.push({ type: 'system', content: '  cd [index]         - Select glade by index (1-8)' })
       terminalHistory.value.push({ type: 'system', content: '  pip [name] [color] - Create a new pip here' })
       terminalHistory.value.push({ type: 'system', content: '  rm [pip_id]        - Remove a pip by ID' })
+      terminalHistory.value.push({ type: 'system', content: '  select [pip_id]    - Select pip (opens Pip overlay)' })
+      terminalHistory.value.push({ type: 'system', content: '  talk [pip_id]      - Select pip and open chat' })
+      terminalHistory.value.push({ type: 'system', content: '  feed [pip_id]      - Feed a pip' })
+      terminalHistory.value.push({ type: 'system', content: '  hydrate [pip_id]   - Hydrate a pip' })
+      terminalHistory.value.push({ type: 'system', content: '  hat [pip_id] [id]  - Equip hat: wizard_hat|hard_hat|beret|crown' })
+      terminalHistory.value.push({ type: 'system', content: '  mode [id]          - Set mode: explore|build|playful|wizard|about' })
+      terminalHistory.value.push({ type: 'system', content: '  goto [pip_id]      - Teleport near pip' })
       terminalHistory.value.push({ type: 'system', content: '  glade [name] [theme] - Create a new dynamic glade' })
       terminalHistory.value.push({ type: 'system', content: '  build [type] [x] [z] - Place a farm block' })
       terminalHistory.value.push({ type: 'system', content: '  tp [x] [z]         - Teleport to world coordinates' })
@@ -74,10 +96,33 @@ async function handleCommand() {
         terminalHistory.value.push({ type: 'system', content: '  (No pips found)' })
       } else {
         localPips.forEach(p => {
-          terminalHistory.value.push({ type: 'system', content: `  > ${p.name} [${p.id}] (${p.model})` })
+          terminalHistory.value.push({ type: 'system', content: `  > ${formatPip(p)}` })
         })
       }
       break
+
+    case 'agents': {
+      terminalHistory.value.push({ type: 'system', content: 'All agents (pips):' })
+      const byGlade = new Map()
+      for (const p of pips.value) {
+        const gid = p.gladeId || 'unknown'
+        if (!byGlade.has(gid)) byGlade.set(gid, [])
+        byGlade.get(gid).push(p)
+      }
+      const gladeName = (gid) => gladeSlots.value.find((g) => g.id === gid)?.name || gid
+      const glades = Array.from(byGlade.keys()).sort((a, b) => gladeName(a).localeCompare(gladeName(b)))
+      if (glades.length === 0) {
+        terminalHistory.value.push({ type: 'system', content: '  (No pips found)' })
+        break
+      }
+      for (const gid of glades) {
+        terminalHistory.value.push({ type: 'system', content: `- ${gladeName(gid)} (${gid})` })
+        byGlade.get(gid).forEach((p) => {
+          terminalHistory.value.push({ type: 'system', content: `    > ${formatPip(p)}` })
+        })
+      }
+      break
+    }
 
     case 'cd':
       const idx = parseInt(args[0]) - 1
@@ -115,6 +160,91 @@ async function handleCommand() {
         terminalHistory.value.push({ type: 'error', content: `Pip ${id} not found.` })
       }
       break
+
+    case 'select': {
+      const pipId = args[0]
+      const pip = findPipById(pipId)
+      if (!pip) {
+        terminalHistory.value.push({ type: 'error', content: `Pip ${pipId} not found.` })
+        break
+      }
+      selectPip(pip)
+      terminalHistory.value.push({ type: 'system', content: `Selected: ${formatPip(pip)}` })
+      break
+    }
+
+    case 'talk': {
+      const pipId = args[0]
+      const pip = findPipById(pipId)
+      if (!pip) {
+        terminalHistory.value.push({ type: 'error', content: `Pip ${pipId} not found.` })
+        break
+      }
+      selectPip(pip)
+      openChat()
+      terminalHistory.value.push({ type: 'system', content: `Chat opened with: ${formatPip(pip)}` })
+      break
+    }
+
+    case 'feed': {
+      const pipId = args[0]
+      if (!pipId) {
+        terminalHistory.value.push({ type: 'error', content: 'Usage: feed [pip_id]' })
+        break
+      }
+      if (feedPip(pipId)) terminalHistory.value.push({ type: 'system', content: `Fed ${pipId}.` })
+      else terminalHistory.value.push({ type: 'error', content: `Pip ${pipId} not found.` })
+      break
+    }
+
+    case 'hydrate': {
+      const pipId = args[0]
+      if (!pipId) {
+        terminalHistory.value.push({ type: 'error', content: 'Usage: hydrate [pip_id]' })
+        break
+      }
+      if (hydratePip(pipId)) terminalHistory.value.push({ type: 'system', content: `Hydrated ${pipId}.` })
+      else terminalHistory.value.push({ type: 'error', content: `Pip ${pipId} not found.` })
+      break
+    }
+
+    case 'hat': {
+      const pipId = args[0]
+      const hatId = args[1]
+      if (!pipId || !hatId) {
+        terminalHistory.value.push({ type: 'error', content: 'Usage: hat [pip_id] [wizard_hat|hard_hat|beret|crown]' })
+        break
+      }
+      const ok = equipHat(pipId, { id: hatId })
+      terminalHistory.value.push({ type: ok ? 'system' : 'error', content: ok ? `Equipped ${hatId} on ${pipId}.` : `Failed to equip hat on ${pipId}.` })
+      break
+    }
+
+    case 'mode': {
+      const modeId = args[0]
+      if (!modeId) {
+        terminalHistory.value.push({ type: 'error', content: 'Usage: mode [explore|build|playful|wizard|about]' })
+        break
+      }
+      const ok = setMode(modeId)
+      terminalHistory.value.push({ type: ok ? 'system' : 'error', content: ok ? `Mode set: ${modeId}` : `Invalid mode: ${modeId}` })
+      break
+    }
+
+    case 'goto': {
+      const pipId = args[0]
+      const pip = findPipById(pipId)
+      if (!pip || pip.position_x === undefined) {
+        terminalHistory.value.push({ type: 'error', content: `Pip ${pipId} not found (or has no position).` })
+        break
+      }
+      import('../three/camera.js').then((m) => {
+        m.teleportNearTarget(pip.position_x, pip.position_z)
+        terminalHistory.value.push({ type: 'system', content: `Teleported near ${pip.name}.` })
+        scrollToBottom()
+      })
+      break
+    }
 
     case 'glade':
       const gName = args[0] || 'New Sector'
@@ -228,52 +358,99 @@ async function callClaude(prompt) {
 </script>
 
 <template>
-  <div 
-    v-if="terminalOpen" 
-    class="terminal-overlay"
-    @click.self="toggleTerminal"
-  >
-    <div class="terminal-container" @click.stop>
+  <template v-if="visible">
+    <!-- Docked / embedded mode -->
+    <div v-if="docked" class="terminal-docked panel" :class="{ collapsed: !terminalOpen }" @click.stop>
       <div class="terminal-header" @mousedown="$emit('drag-start')">
         <div class="header-led"></div>
         <div class="header-title">PIPS_TERMINAL_ROOT@THE_GLADE</div>
         <div class="header-controls">
-          <button @click="toggleTerminal">_</button>
-          <button @click="terminalHistory = []">□</button>
-          <button class="close" @click="toggleTerminal">×</button>
+          <button @click="toggleTerminal">{{ terminalOpen ? '−' : '+' }}</button>
+          <button @click="terminalHistory = []" :disabled="!terminalOpen">□</button>
         </div>
       </div>
-      
-      <div class="terminal-history" ref="historyRef">
-        <div 
-          v-for="(msg, idx) in terminalHistory" 
-          :key="idx" 
-          class="line"
-          :class="msg.type"
-        >
-          <span v-if="msg.type === 'user'" class="prompt">$</span>
-          <span v-if="msg.type === 'system'" class="prompt">#</span>
-          <span v-if="msg.type === 'assistant'" class="prompt">CLAUDE></span>
-          <span v-if="msg.type === 'error'" class="prompt">ERR!</span>
-          <span class="content" v-html="msg.content"></span>
+
+      <template v-if="terminalOpen">
+        <div class="terminal-history" ref="historyRef">
+          <div 
+            v-for="(msg, idx) in terminalHistory" 
+            :key="idx" 
+            class="line"
+            :class="msg.type"
+          >
+            <span v-if="msg.type === 'user'" class="prompt">$</span>
+            <span v-if="msg.type === 'system'" class="prompt">#</span>
+            <span v-if="msg.type === 'assistant'" class="prompt">CLAUDE></span>
+            <span v-if="msg.type === 'error'" class="prompt">ERR!</span>
+            <span class="content" v-html="msg.content"></span>
+          </div>
         </div>
-      </div>
-      
-      <div class="terminal-input-row" @click="focusInput">
-        <span class="prompt-arrow">></span>
-        <input 
-          ref="inputRef"
-          v-model="userInput" 
-          type="text" 
-          spellcheck="false"
-          autofocus
-          @keydown.enter="handleCommand"
-          @keydown.esc="toggleTerminal"
-        />
-        <div class="cursor-block"></div>
+        
+        <div class="terminal-input-row" @click="focusInput">
+          <span class="prompt-arrow">></span>
+          <input 
+            ref="inputRef"
+            v-model="userInput" 
+            type="text" 
+            spellcheck="false"
+            autofocus
+            @keydown.enter="handleCommand"
+            @keydown.esc="toggleTerminal"
+          />
+          <div class="cursor-block"></div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Overlay mode (existing) -->
+    <div 
+      v-else
+      v-if="terminalOpen" 
+      class="terminal-overlay"
+      @click.self="toggleTerminal"
+    >
+      <div class="terminal-container" @click.stop>
+        <div class="terminal-header" @mousedown="$emit('drag-start')">
+          <div class="header-led"></div>
+          <div class="header-title">PIPS_TERMINAL_ROOT@THE_GLADE</div>
+          <div class="header-controls">
+            <button @click="toggleTerminal">_</button>
+            <button @click="terminalHistory = []">□</button>
+            <button class="close" @click="toggleTerminal">×</button>
+          </div>
+        </div>
+        
+        <div class="terminal-history" ref="historyRef">
+          <div 
+            v-for="(msg, idx) in terminalHistory" 
+            :key="idx" 
+            class="line"
+            :class="msg.type"
+          >
+            <span v-if="msg.type === 'user'" class="prompt">$</span>
+            <span v-if="msg.type === 'system'" class="prompt">#</span>
+            <span v-if="msg.type === 'assistant'" class="prompt">CLAUDE></span>
+            <span v-if="msg.type === 'error'" class="prompt">ERR!</span>
+            <span class="content" v-html="msg.content"></span>
+          </div>
+        </div>
+        
+        <div class="terminal-input-row" @click="focusInput">
+          <span class="prompt-arrow">></span>
+          <input 
+            ref="inputRef"
+            v-model="userInput" 
+            type="text" 
+            spellcheck="false"
+            autofocus
+            @keydown.enter="handleCommand"
+            @keydown.esc="toggleTerminal"
+          />
+          <div class="cursor-block"></div>
+        </div>
       </div>
     </div>
-  </div>
+  </template>
 </template>
 
 <style scoped>
@@ -290,6 +467,39 @@ async function callClaude(prompt) {
   align-items: center;
   justify-content: center;
   padding: 20px;
+}
+
+.terminal-docked {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  width: 520px;
+  height: 320px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #30363d;
+  background: rgba(13, 17, 23, 0.92);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7), 0 0 30px rgba(133, 224, 255, 0.08);
+  overflow: hidden;
+}
+
+.terminal-docked.collapsed {
+  height: 34px;
+}
+
+.terminal-docked .terminal-container {
+  width: 100%;
+  height: 100%;
+}
+
+.terminal-docked .terminal-history {
+  padding: 12px;
+}
+
+.terminal-docked .terminal-input-row {
+  height: 42px;
 }
 
 .terminal-container {

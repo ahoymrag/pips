@@ -100,6 +100,7 @@ export function updatePipEyeTracking(camera) {
 }
 
 export function updatePipAnimations(time) {
+  const now = performance.now() / 1000
   let i = 0
   for (const [, group] of pipMeshMap) {
     // Gentle floating bob - very soft and dreamy
@@ -119,8 +120,99 @@ export function updatePipAnimations(time) {
       })
     }
 
+    // Reaction animation (feed/hydrate): bounce + sparkle + heart burst
+    const reaction = group.userData.reaction
+    if (reaction && now < reaction.until) {
+      const t = (now - reaction.start)
+      const p = Math.min(1, t / reaction.duration)
+      const easeOut = 1 - Math.pow(1 - p, 3)
+      const bounce = Math.sin(t * 14) * (1 - easeOut) * 0.18
+      const pop = Math.sin(t * 8) * 0.08 + 0.08
+
+      group.scale.setScalar(1 + pop + bounce * 0.3)
+      group.rotation.x = Math.sin(t * 10) * 0.06
+
+      if (blushes) {
+        blushes.forEach(b => {
+          b.material.emissiveIntensity = 0.22 + Math.sin(now * 6) * 0.08
+          b.material.opacity = 0.65 + Math.sin(now * 5) * 0.08
+        })
+      }
+
+      const sl = group.userData.leftSparkle
+      const sr = group.userData.rightSparkle
+      if (sl && sr) {
+        const s = 1 + Math.sin(now * 18) * 0.35
+        sl.scale.setScalar(s)
+        sr.scale.setScalar(s)
+      }
+
+      // Update heart particles
+      const particles = group.userData.reactionParticles
+      if (particles && particles.length) {
+        for (let j = particles.length - 1; j >= 0; j--) {
+          const h = particles[j]
+          h.userData.vel.y -= 0.012
+          h.position.addScaledVector(h.userData.vel, 0.016)
+          h.rotation.z += 0.08
+          h.material.opacity *= 0.965
+          h.scale.multiplyScalar(0.985)
+          if (h.material.opacity < 0.05) {
+            group.remove(h)
+            particles.splice(j, 1)
+          }
+        }
+      }
+    } else {
+      // reset scale if no reaction
+      group.scale.setScalar(1)
+      group.rotation.x = 0
+    }
+
     i++
   }
+}
+
+export function triggerPipReaction(pipId, kind = 'feed') {
+  const group = pipMeshMap.get(pipId)
+  if (!group) return false
+
+  const now = performance.now() / 1000
+  const duration = kind === 'hydrate' ? 1.2 : 1.35
+  group.userData.reaction = {
+    kind,
+    start: now,
+    duration,
+    until: now + duration,
+  }
+
+  // Heart burst
+  const color = kind === 'hydrate' ? 0x8be9ff : 0xff8ebc
+  const heartMat = new THREE.MeshLambertMaterial({
+    color,
+    emissive: color,
+    emissiveIntensity: 0.9,
+    transparent: true,
+    opacity: 0.95,
+  })
+  const heartGeo = new THREE.SphereGeometry(0.06, 8, 8)
+  const count = 8
+
+  if (!group.userData.reactionParticles) group.userData.reactionParticles = []
+
+  for (let i = 0; i < count; i++) {
+    const h = new THREE.Mesh(heartGeo, heartMat.clone())
+    const angle = (i / count) * Math.PI * 2
+    h.position.set(Math.cos(angle) * 0.08, 0.55 + Math.random() * 0.06, Math.sin(angle) * 0.08)
+    h.userData.vel = new THREE.Vector3(
+      (Math.random() - 0.5) * 0.35 + Math.cos(angle) * 0.2,
+      0.55 + Math.random() * 0.4,
+      (Math.random() - 0.5) * 0.35 + Math.sin(angle) * 0.2
+    )
+    group.add(h)
+    group.userData.reactionParticles.push(h)
+  }
+  return true
 }
 
 function buildHat(hatId) {

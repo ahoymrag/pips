@@ -14,24 +14,35 @@ const playerPosition = ref({ x: 0, z: 0 })
 const fairies = ref([])
 const capturedFairies = ref(0)
 const pokeballs = ref(10)
+const WEAPONS = [
+  { id: 'weapon_short_sword', label: 'Short Sword', icon: '🗡️', type: 'weapon' },
+  { id: 'weapon_axe', label: 'Tiny Axe', icon: '🪓', type: 'weapon' },
+  { id: 'weapon_bow', label: 'Pocket Bow', icon: '🏹', type: 'weapon' },
+  { id: 'weapon_hammer', label: 'Bonk Hammer', icon: '🔨', type: 'weapon' },
+]
+const DEFAULT_WEAPON = WEAPONS[Math.floor(Math.random() * WEAPONS.length)]
+
 const inventory = ref([
   { id: 'wizard_hat', label: 'Wizard Hat', icon: '🧙‍♂️', type: 'hat' },
   { id: 'hard_hat', label: 'Hard Hat', icon: '👷', type: 'hat' },
   { id: 'beret', label: 'Beret', icon: '🎨', type: 'hat' },
   { id: 'crown', label: 'Crown', icon: '👑', type: 'hat' },
   { id: 'pip_treat', label: 'Pip Treat', icon: '🍎', type: 'food' },
-  { id: 'pokeball', label: 'Pokeball', icon: '🔴', type: 'tool' },
-  { id: 'balloon_cannon', label: 'Balloon Cannon', icon: '🔫', type: 'tool' },
+  DEFAULT_WEAPON,
+  { id: 'balloon_cannon', label: 'Balloon Popper', icon: '🎈', type: 'tool' },
   { id: 'firework_launcher', label: 'Firework', icon: '🎆', type: 'tool' },
   { id: 'fairy_summoner', label: 'Fairy Wand', icon: '✨', type: 'tool' },
-  null
+  { id: 'capture_orb', label: 'Capture Orb', icon: '🫧', type: 'tool' },
+  null,
 ])
-const selectedSlot = ref(5) // Start with Pokeball selected (key 6)
+const selectedSlot = ref(5) // Start with a random weapon selected (key 6)
 const wildPips = ref([])
-const terminalOpen = ref(false)
+// When docked, this acts as expanded/collapsed. When overlay, it's open/closed.
+const terminalOpen = ref(true)
 const onboardingStep = ref(0) // 0: Start, 1: Shrinking, 2: Tour, 3: Arrival, 4: Fed, 5: Done
 const guidePip = ref({ id: 'guide', name: 'Nebula', color: '#c9a0ff', x: 13.5, z: 13.5, size: 5, targetX: 13.5, targetZ: 13.5 })
 const floatingTexts = ref([])
+const toast = ref(null) // { id, text }
 
 let nextFarmPipId = 1000
 const gladeSlots = ref(seedGlades())
@@ -196,9 +207,42 @@ export function useScene() {
 
   function cycleSlot(dir = 1) {
     const total = inventory.value.length
+    // Skip empty slots for smoother UX (but never infinite-loop).
     let next = (selectedSlot.value + dir + total) % total
-    // Skip empty slots? Not necessarily, but let's keep it simple.
+    for (let i = 0; i < total; i++) {
+      if (inventory.value[next]) break
+      next = (next + dir + total) % total
+    }
     selectedSlot.value = next
+  }
+
+  function showToast(text, ms = 1400) {
+    const id = 'toast-' + Date.now() + Math.random()
+    toast.value = { id, text }
+    setTimeout(() => {
+      if (toast.value?.id === id) toast.value = null
+    }, ms)
+  }
+
+  function grantSmallGift(pip, reason = 'care') {
+    const gifts = [
+      { id: 'gift_glimmer', label: 'Glimmer Pebble', icon: '✨', type: 'gift' },
+      { id: 'gift_ribbon', label: 'Tiny Ribbon', icon: '🎀', type: 'gift' },
+      { id: 'gift_cookie', label: 'Warm Cookie', icon: '🍪', type: 'gift' },
+      { id: 'gift_shell', label: 'Pretty Shell', icon: '🐚', type: 'gift' },
+    ]
+    const gift = gifts[Math.floor(Math.random() * gifts.length)]
+
+    // Try to place into the first empty slot, else just sparkle-text it.
+    const emptyIdx = inventory.value.findIndex((s) => !s)
+    if (emptyIdx !== -1) {
+      inventory.value[emptyIdx] = gift
+      triggerInteractionText(pip.position_x, pip.position_z, `+ ${gift.icon} ${gift.label}`, '#ffd8ff')
+    } else {
+      triggerInteractionText(pip.position_x, pip.position_z, `${gift.icon} ${gift.label}`, '#ffd8ff')
+    }
+    showToast(`Gift received: ${gift.icon} ${gift.label}`)
+    return gift
   }
 
   function recomputeFarmStats() {
@@ -430,6 +474,10 @@ export function useScene() {
       
       triggerInteractionText(p.position_x, p.position_z, '+35 XP', '#ffd700')
       setTimeout(() => triggerInteractionText(p.position_x, p.position_z, '+5 Bond', '#ff8ebc'), 200)
+      setTimeout(() => grantSmallGift(p, 'feed'), 350)
+
+      // Extra-cute reaction animation
+      import('../three/pips.js').then((m) => m.triggerPipReaction?.(pipId, 'feed'))
 
       if (onboardingStep.value === 3) onboardingStep.value = 4
       return true
@@ -448,6 +496,10 @@ export function useScene() {
 
       triggerInteractionText(p.position_x, p.position_z, '+25 XP', '#ffd700')
       setTimeout(() => triggerInteractionText(p.position_x, p.position_z, '+3 Bond', '#ff8ebc'), 200)
+      setTimeout(() => grantSmallGift(p, 'hydrate'), 350)
+
+      // Extra-cute reaction animation
+      import('../three/pips.js').then((m) => m.triggerPipReaction?.(pipId, 'hydrate'))
 
       return true
     }
@@ -540,6 +592,8 @@ export function useScene() {
     hydratePip,
     nearbyPip,
     floatingTexts,
+    toast,
+    showToast,
     nextOnboarding,
     removePip,
     removeFarmBlock,

@@ -400,10 +400,9 @@ function updateGuidePip(delta, elapsed) {
       
       const distToPlayer = Math.hypot(camera.position.x - guidePip.value.x, camera.position.z - guidePip.value.z)
       
-      // Stop and wait if player is too far (force them to follow)
+      // If player is far away, keep moving anyway (no forced "follow" gating)
       if (distToPlayer > 12) {
-         guideMesh.rotation.y += delta * 6 // Rapid spin to signal wait
-         return 
+         guideMesh.rotation.y += delta * 2.5 // soft "come along" signal
       }
 
       const targetX = 55
@@ -636,11 +635,17 @@ function onCanvasClick(event) {
        shootFirework(event)
     } else if (currentItem?.id === 'fairy_summoner') {
        summonFairyEffect(event)
-    } else if (currentItem?.id === 'pokeball') {
+    } else if (currentItem?.id === 'capture_orb') {
        throwPokeball(event)
+    } else if (currentItem?.type === 'weapon') {
+       // Cute weapon "bonk" = sparkly pop in front of camera
+       const dir = new THREE.Vector3()
+       camera.getWorldDirection(dir)
+       const pos = camera.position.clone().addScaledVector(dir, 6)
+       createFireworkEffect(pos, new THREE.Color().setHSL(Math.random(), 0.85, 0.7).getHex())
     } else if (!currentItem) {
        // Default fallback if slot is empty
-       throwPokeball(event)
+       shootFirework(event)
     }
     return
   }

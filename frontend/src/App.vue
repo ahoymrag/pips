@@ -24,6 +24,8 @@ const uiSettings = ref({
   showHud: true,
   showIntel: true,
   showDock: true,
+  showTerminal: true,
+  terminalDocked: true,
   opacity: 0.75,
 })
 
@@ -74,6 +76,7 @@ const {
   nearbyPip,
   hydratePip,
   floatingTexts,
+  toast,
 } = useScene()
 const chatWindow = ref(null)
 const introVisible = ref(true)
@@ -105,7 +108,12 @@ function onKeyDown(event) {
   if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return
   
   if (event.code === 'Backquote') {
-    toggleTerminal()
+    if (event.shiftKey) {
+      uiSettings.value.terminalDocked = !uiSettings.value.terminalDocked
+      saveUiSettings()
+    } else {
+      toggleTerminal()
+    }
     event.preventDefault()
     return
   }
@@ -222,6 +230,20 @@ const floatingTextsWithScreenPos = computed(() => {
     }
   }).filter(t => t !== null)
 })
+
+const selectedItem = computed(() => inventory.value[selectedSlot.value] || null)
+const selectedItemHint = computed(() => {
+  const item = selectedItem.value
+  if (!item) return 'Scroll / Q / R to select an item'
+  if (item.type === 'weapon') return 'Click to bonk (sparkly pop)'
+  if (item.id === 'capture_orb') return 'Click to toss (capture effect)'
+  if (item.id === 'balloon_cannon') return 'Click to pop a balloon seed'
+  if (item.id === 'firework_launcher') return 'Click to launch fireworks'
+  if (item.id === 'fairy_summoner') return 'Click to summon a fairy'
+  if (item.type === 'hat') return 'Click a Pip to equip'
+  if (item.type === 'food') return 'Click a Pip to feed'
+  return 'Click to use'
+})
 </script>
 
 <template>
@@ -229,7 +251,7 @@ const floatingTextsWithScreenPos = computed(() => {
   <PipOverlay @focus-chat="focusChat" />
   <ChatWindow ref="chatWindow" />
   <CouncilButton />
-  <TerminalWindow />
+  <TerminalWindow :docked="uiSettings.terminalDocked" :visible="uiSettings.showTerminal" />
 
   <div class="crosshair" :class="{ active: !!nearbyPip }"></div>
 
@@ -269,7 +291,7 @@ const floatingTextsWithScreenPos = computed(() => {
       <p>Watch it shrink and get ready...</p>
     </div>
     <div v-if="onboardingStep === 2" class="tut-card">
-      <p>Follow Nebula to the <strong>Infrastructure Forge</strong>!</p>
+      <p>Meet Nebula at the <strong>Infrastructure Forge</strong>!</p>
       <p>Use <strong>WASD</strong> to move and <strong>Shift</strong> to sprint.</p>
     </div>
     <div v-if="onboardingStep === 3" class="tut-card highlight">
@@ -375,8 +397,8 @@ const floatingTextsWithScreenPos = computed(() => {
       <div class="last-action">Arcade flight tuning enabled.</div>
       <div class="last-action" style="color: #ffccf9; font-weight: 700;">
         ✨ Fairies Caught: {{ capturedFairies }}<br/>
-        <span style="font-size: 11px; font-weight: 700; color: #fff;">Tool: {{ inventory[selectedSlot]?.label || 'Unarmed' }}</span><br/>
-        <span style="font-size: 10px; opacity: 0.8;">Left-Click to use power!</span><br/>
+        <span style="font-size: 11px; font-weight: 700; color: #fff;">Tool: {{ selectedItem?.label || 'Unarmed' }}</span><br/>
+        <span style="font-size: 10px; opacity: 0.8;">{{ selectedItemHint }}</span><br/>
         <span style="font-size: 10px; opacity: 0.8;">Right-Click to drop crate!</span>
       </div>
     </template>
@@ -487,9 +509,36 @@ const floatingTextsWithScreenPos = computed(() => {
   </div>
 
   <NebulaIntro v-if="introVisible" @done="onIntroDone" />
+
+  <div v-if="toast" class="gift-toast">
+    {{ toast.text }}
+  </div>
 </template>
 
 <style scoped>
+.gift-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  z-index: 1200;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: #fff;
+  background: linear-gradient(90deg, rgba(255, 117, 140, 0.92), rgba(255, 126, 179, 0.92));
+  box-shadow: 0 14px 35px rgba(0,0,0,0.45), 0 0 22px rgba(255, 120, 180, 0.18);
+  pointer-events: none;
+  animation: toast-pop 0.18s ease-out;
+}
+
+@keyframes toast-pop {
+  from { transform: translateX(-50%) translateY(8px) scale(0.98); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+}
+
 .about-overlay {
   position: fixed;
   top: 50%;
