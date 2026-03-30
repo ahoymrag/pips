@@ -45,11 +45,11 @@ const farmTools = [
 ]
 
 const modeDefinitions = [
-  { id: 'explore', key: 'F1', label: 'Explore' },
-  { id: 'build', key: 'F2', label: 'Build' },
-  { id: 'playful', key: 'F3', label: 'Playful' },
-  { id: 'wizard', key: 'F4', label: 'Wizard' },
-  { id: 'about', key: 'F5', label: 'About' },
+  { id: 'explore', label: 'Explore' },
+  { id: 'build', label: 'Build' },
+  { id: 'playful', label: 'Playful' },
+  { id: 'wizard', label: 'Wizard' },
+  { id: 'about', label: 'About' },
 ]
 
 function clone(value) {

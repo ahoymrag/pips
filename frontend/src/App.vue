@@ -109,11 +109,6 @@ function onKeyDown(event) {
   }
 
   if (terminalOpen.value) return
-
-  if (event.code === 'F1') { setMode('explore'); return }
-  if (event.code === 'F2') { setMode('build'); return }
-  if (event.code === 'F3') { setMode('playful'); return }
-  if (event.code === 'F4') { setMode('wizard'); return }
   if (event.code === 'Tab') {
     event.preventDefault()
     cycleMode()
@@ -284,7 +279,7 @@ function mapPercentY(z) {
         :class="{ active: currentMode === mode.id }"
         @click="setMode(mode.id)"
       >
-        {{ mode.key }} {{ mode.label }}
+        {{ mode.label }}
       </button>
     </div>
 
