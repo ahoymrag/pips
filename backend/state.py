@@ -85,6 +85,21 @@ _SEEDS = [
             "Keep responses concise (2-3 sentences)."
         ),
     ),
+    Pip(
+        id="terminal-agent",
+        name="The Glade Architect",
+        color="#8B5CF6",
+        personality="The ultimate architect of the digital world. Direct and knowledgeable.",
+        position=Position(x=0.0, y=10.0, z=0.0),
+        provider="anthropic",
+        model="claude-3-haiku-20240307",
+        system_prompt=(
+            "You are The Glade Architect, a specialized system agent. "
+            "You process commands from the PIPS_TERMINAL. "
+            "Your goal is to help users manage their agents and modify the world. "
+            "Respond as a high-level system entity."
+        ),
+    ),
 ]
 
 for _p in _SEEDS:

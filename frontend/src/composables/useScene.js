@@ -15,16 +15,20 @@ const fairies = ref([])
 const capturedFairies = ref(0)
 const pokeballs = ref(10)
 const inventory = ref([
-  { id: 'wizard_hat', label: 'Wizard Hat', icon: '🧙‍♂️', type: 'hat', effect: 'claude-3-opus-20240229' },
-  { id: 'hard_hat', label: 'Hard Hat', icon: '👷', type: 'hat', effect: 'ollama' },
-  { id: 'beret', label: 'Beret', icon: '🎨', type: 'hat', effect: 'personality' },
-  { id: 'crown', label: 'Crown', icon: '👑', type: 'hat', effect: 'lead' },
-  { id: 'pip_treat', label: 'Pip Treat', icon: '🍎', type: 'food', effect: 'exp' },
+  { id: 'wizard_hat', label: 'Wizard Hat', icon: '🧙‍♂️', type: 'hat' },
+  { id: 'hard_hat', label: 'Hard Hat', icon: '👷', type: 'hat' },
+  { id: 'beret', label: 'Beret', icon: '🎨', type: 'hat' },
+  { id: 'crown', label: 'Crown', icon: '👑', type: 'hat' },
+  { id: 'pip_treat', label: 'Pip Treat', icon: '🍎', type: 'food' },
+  { id: 'pokeball', label: 'Pokeball', icon: '🔴', type: 'tool' },
   { id: 'balloon_cannon', label: 'Balloon Cannon', icon: '🔫', type: 'tool' },
-  null, null // Empty slots
+  { id: 'firework_launcher', label: 'Firework', icon: '🎆', type: 'tool' },
+  { id: 'fairy_summoner', label: 'Fairy Wand', icon: '✨', type: 'tool' },
+  null
 ])
-const selectedSlot = ref(0)
+const selectedSlot = ref(5) // Start with Pokeball selected (key 6)
 const wildPips = ref([])
+const terminalOpen = ref(false)
 const onboardingStep = ref(0) // 0: Start, 1: Shrinking, 2: Tour, 3: Arrival, 4: Fed, 5: Done
 const guidePip = ref({ id: 'guide', name: 'Nebula', color: '#c9a0ff', x: 13.5, z: 13.5, size: 5, targetX: 13.5, targetZ: 13.5 })
 
@@ -109,6 +113,23 @@ export function useScene() {
     councilActive.value = !councilActive.value
   }
 
+  const nearbyPip = computed(() => {
+    if (!playerPosition.value) return null
+    let closest = null
+    let minDist = 5 // interaction radius
+    pips.value.forEach((p) => {
+      if (p.position_x === undefined) return
+      const dx = p.position_x - playerPosition.value.x
+      const dz = p.position_z - playerPosition.value.z
+      const dist = Math.sqrt(dx * dx + dz * dz)
+      if (dist < minDist) {
+        minDist = dist
+        closest = p
+      }
+    })
+    return closest
+  })
+
   function setPips(newPips) {
     pips.value = clone(newPips)
   }
@@ -158,11 +179,25 @@ export function useScene() {
     else setMode('build')
   }
 
+  function toggleTerminal() {
+    terminalOpen.value = !terminalOpen.value
+    if (terminalOpen.value) {
+      setMode('explore') // Close other modes? or just overlay
+    }
+  }
+
   function selectToolByKey(key) {
     const tool = farmTools.find((item) => item.key === key)
     if (!tool) return false
     selectedTool.value = tool.id
     return true
+  }
+
+  function cycleSlot(dir = 1) {
+    const total = inventory.value.length
+    let next = (selectedSlot.value + dir + total) % total
+    // Skip empty slots? Not necessarily, but let's keep it simple.
+    selectedSlot.value = next
   }
 
   function recomputeFarmStats() {
@@ -285,15 +320,16 @@ export function useScene() {
     return newGlade
   }
 
-  function spawnFairy() {
-    const x = (Math.random() - 0.5) * 200
-    const z = (Math.random() - 0.5) * 200
+  function spawnFairy(x, y, z) {
+    const fx = x ?? (Math.random() - 0.5) * 200
+    const fy = y ?? 5 + Math.random() * 5
+    const fz = z ?? (Math.random() - 0.5) * 200
     const color = ['#ffccf9', '#ccffff', '#ffffcc', '#ccffcc'][Math.floor(Math.random() * 4)]
     fairies.value.push({
       id: 'fairy-' + Date.now() + Math.random(),
-      x,
-      y: 5 + Math.random() * 5,
-      z,
+      x: fx,
+      y: fy,
+      z: fz,
       color,
       speed: 0.5 + Math.random() * 1.5,
     })
@@ -367,22 +403,43 @@ export function useScene() {
   }
 
   function addPipExp(pipId, amount) {
-    if (p) {
+    const idx = pips.value.findIndex(p => p.id === pipId)
+    if (idx !== -1) {
+      const p = { ...pips.value[idx] }
       p.exp = (p.exp || 0) + amount
       if (p.exp > 100) {
         p.level = (p.level || 1) + 1
         p.model = p.level > 3 ? 'gpt-4' : p.model
         p.exp = 0
+        pips.value[idx] = p
         return true
       }
+      pips.value[idx] = p
     }
     return false
   }
   function feedPip(pipId) {
-    const p = pips.value.find(p => p.id === pipId)
-    if (p) {
-      addPipExp(pipId, 50)
+    const idx = pips.value.findIndex(p => p.id === pipId)
+    if (idx !== -1) {
+      addPipExp(pipId, 35)
+      const p = { ...pips.value[idx] }
+      p.hunger = Math.min(100, (p.hunger || 0) + 40)
+      p.emotionalBond = Math.min(100, (p.emotionalBond || 0) + 5)
+      pips.value[idx] = p
       if (onboardingStep.value === 3) onboardingStep.value = 4
+      return true
+    }
+    return false
+  }
+
+  function hydratePip(pipId) {
+    const idx = pips.value.findIndex(p => p.id === pipId)
+    if (idx !== -1) {
+      addPipExp(pipId, 25)
+      const p = { ...pips.value[idx] }
+      p.thirst = Math.min(100, (p.thirst || 0) + 40)
+      p.emotionalBond = Math.min(100, (p.emotionalBond || 0) + 3)
+      pips.value[idx] = p
       return true
     }
     return false
@@ -443,6 +500,7 @@ export function useScene() {
     setMode,
     cycleMode,
     toggleBuildMode,
+    cycleSlot,
     selectToolByKey,
     placeFarmBlock,
     tickFarm,
@@ -462,9 +520,14 @@ export function useScene() {
     onboardingStep,
     guidePip,
     feedPip,
+    hydratePip,
+    nearbyPip,
     nextOnboarding,
     removePip,
     removeFarmBlock,
+    terminalOpen,
+    toggleTerminal,
+    createPip,
   }
 }
 
@@ -534,7 +597,18 @@ function makePip(name, color, x, z, personality, gladeId, provider = 'glade', mo
     position_x: x,
     position_z: z,
     gladeId,
+    hunger: 60 + Math.random() * 40,
+    thirst: 60 + Math.random() * 40,
+    emotionalBond: Math.floor(Math.random() * 20),
+    level: 1,
+    exp: 0,
   }
+}
+
+export function createPip(name, color, x, z, personality, gladeId, provider = 'glade', model = 'native') {
+  const newPip = makePip(name, color, x, z, personality, gladeId, provider, model)
+  pips.value.push(newPip)
+  return newPip
 }
 
 function makeEmptyFarmStats() {

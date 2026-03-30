@@ -76,6 +76,32 @@ watch(
       <div v-if="selectedPip.exp !== undefined" style="margin-top: 4px; height: 4px; width: 100%; background: rgba(0,0,0,0.2); border-radius: 2px; overflow: hidden;">
          <div :style="{ width: `${selectedPip.exp}%`, height: '100%', background: '#ffd700' }"></div>
       </div>
+      
+      <div v-if="selectedPip.hunger !== undefined" style="margin-top: 8px; display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; font-size: 10px; opacity: 0.8;">
+          <span>Hunger</span>
+          <span>{{ Math.round(selectedPip.hunger) }}%</span>
+        </div>
+        <div style="height: 4px; width: 100%; background: rgba(0,0,0,0.2); border-radius: 2px; overflow: hidden;">
+          <div class="stat-fill hunger" :style="{ width: `${selectedPip.hunger}%`, height: '100%' }"></div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; font-size: 10px; opacity: 0.8; margin-top: 2px;">
+          <span>Thirst</span>
+          <span>{{ Math.round(selectedPip.thirst) }}%</span>
+        </div>
+        <div style="height: 4px; width: 100%; background: rgba(0,0,0,0.2); border-radius: 2px; overflow: hidden;">
+          <div class="stat-fill thirst" :style="{ width: `${selectedPip.thirst}%`, height: '100%' }"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 10px; opacity: 0.8; margin-top: 2px;">
+          <span>Bond</span>
+          <span>{{ Math.round(selectedPip.emotionalBond || 0) }}%</span>
+        </div>
+        <div style="height: 4px; width: 100%; background: rgba(255,100,150,0.1); border-radius: 2px; overflow: hidden;">
+          <div :style="{ width: `${selectedPip.emotionalBond || 0}%`, height: '100%', background: 'linear-gradient(90deg, #ff758c 0%, #ff7eb3 100%)' }"></div>
+        </div>
+      </div>
     </div>
 
     <div v-if="menuView === 'menu'" style="display: flex; flex-direction: column; gap: 8px;">

@@ -7,6 +7,7 @@ import PipOverlay from './components/PipOverlay.vue'
 import ChatWindow from './components/ChatWindow.vue'
 import CouncilButton from './components/CouncilButton.vue'
 import NebulaIntro from './components/NebulaIntro.vue'
+import TerminalWindow from './components/TerminalWindow.vue'
 import { teleportNearTarget } from './three/camera.js'
 
 const controlsPanelEl = ref(null)
@@ -67,6 +68,10 @@ const {
   toggleBuildMode,
   selectToolByKey,
   spawnDynamicGlade,
+  terminalOpen,
+  toggleTerminal,
+  nearbyPip,
+  hydratePip,
 } = useScene()
 const chatWindow = ref(null)
 const introVisible = ref(true)
@@ -95,6 +100,16 @@ const gladeTrendRows = computed(() => {
 
 function onKeyDown(event) {
   if (event.metaKey || event.ctrlKey || event.altKey) return
+  if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') return
+  
+  if (event.code === 'Backquote') {
+    toggleTerminal()
+    event.preventDefault()
+    return
+  }
+
+  if (terminalOpen.value) return
+
   if (event.code === 'F1') { setMode('explore'); return }
   if (event.code === 'F2') { setMode('build'); return }
   if (event.code === 'F3') { setMode('playful'); return }
@@ -108,30 +123,59 @@ function onKeyDown(event) {
     toggleBuildMode()
     return
   }
+  if (event.code === 'KeyQ') {
+    cycleSlot(-1)
+    return
+  }
+  if (event.code === 'KeyR') {
+    cycleSlot(1)
+    return
+  }
   const key = event.key
   const keyCode = key.charCodeAt(0)
   // Select hotbar slot
   const num = Number(key)
   if (num >= 1 && num <= 9) {
     selectedSlot.value = num - 1
+  } else if (key === '0') {
+    selectedSlot.value = 9
   }
 
   if (buildMode.value && keyCode <= 53) { // 53='5'
     selectToolByKey(key)
     return
   }
+  if (key === 'f' || key === 'F') {
+    if (nearbyPip.value) {
+      feedPip(nearbyPip.value.id)
+      return
+    }
+  }
+  if (key === 'h' || key === 'H') {
+    if (nearbyPip.value) {
+      hydratePip(nearbyPip.value.id)
+      return
+    }
+  }
+
   const glade = selectGladeSlot(Number(key) - 1)
   if (glade) {
     teleportNearTarget(glade.center.x, glade.center.z)
   }
 }
 
+function onWheel(event) {
+  cycleSlot(event.deltaY > 0 ? 1 : -1)
+}
+
 onMounted(() => {
   window.addEventListener('keydown', onKeyDown)
+  window.addEventListener('wheel', onWheel)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeyDown)
+  window.removeEventListener('wheel', onWheel)
 })
 
 function focusChat() {
@@ -166,8 +210,25 @@ function mapPercentY(z) {
   <PipOverlay @focus-chat="focusChat" />
   <ChatWindow ref="chatWindow" />
   <CouncilButton />
+  <TerminalWindow />
 
   <div class="crosshair"></div>
+
+  <!-- Interaction Prompt -->
+  <div v-if="nearbyPip" class="interaction-prompt">
+    <div class="prompt-pip-info">
+      <span class="prompt-dot" :style="{ backgroundColor: nearbyPip.color }"></span>
+      <strong>{{ nearbyPip.name }}</strong>
+    </div>
+    <div class="prompt-keys">
+      <div class="prompt-key-row"><span class="keycap">F</span> Feed Fruit</div>
+      <div class="prompt-key-row"><span class="keycap">H</span> Hydrate</div>
+    </div>
+    <div class="prompt-stats">
+      <div class="stat-bar"><div class="stat-fill hunger" :style="{ width: nearbyPip.hunger + '%' }"></div></div>
+      <div class="stat-bar"><div class="stat-fill thirst" :style="{ width: nearbyPip.thirst + '%' }"></div></div>
+    </div>
+  </div>
 
   <!-- Tutorial Overlay -->
   <div v-if="showTutorial" class="tutorial-overlay">
@@ -240,6 +301,8 @@ function mapPercentY(z) {
     <div class="control-line"><span class="keycap key-wide">Ctrl/C</span> Crouch</div>
     <div class="control-line"><span class="keycap key-wide">E</span> Release</div>
     <div class="control-line"><span class="keycap key-wide">1-9</span> Slots</div>
+    <div class="control-line"><span class="keycap key-wide">Q/R</span> Cycle Slot</div>
+    <div class="control-line"><span class="keycap key-wide">Wheel</span> Cycle Slot</div>
     <div class="control-line"><span class="keycap key-wide">Tab</span> Modes</div>
 
     <template v-if="currentMode === 'explore'">
@@ -281,8 +344,9 @@ function mapPercentY(z) {
       <div class="last-action">Arcade flight tuning enabled.</div>
       <div class="last-action" style="color: #ffccf9; font-weight: 700;">
         ✨ Fairies Caught: {{ capturedFairies }}<br/>
-        <span style="font-size: 10px; opacity: 0.8;">Click to throw Pokeball!</span><br/>
-        <span style="font-size: 10px; color: #ff99ff;">Balloon Cannon (6): Pop objects!</span>
+        <span style="font-size: 11px; font-weight: 700; color: #fff;">Tool: {{ inventory[selectedSlot]?.label || 'Unarmed' }}</span><br/>
+        <span style="font-size: 10px; opacity: 0.8;">Left-Click to use power!</span><br/>
+        <span style="font-size: 10px; opacity: 0.8;">Right-Click to drop crate!</span>
       </div>
     </template>
 

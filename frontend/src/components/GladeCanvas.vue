@@ -348,6 +348,31 @@ function shootBalloonCannon(event) {
   laserProjectiles.push({ mesh: ball, velocity, life: 3, type: 'balloon_seed' })
 }
 
+function shootFirework(event) {
+  if (!camera || !scene) return
+  const dir = new THREE.Vector3()
+  camera.getWorldDirection(dir)
+  // Distance to explode
+  const pos = camera.position.clone().addScaledVector(dir, 12)
+  createFireworkEffect(pos, new THREE.Color().setHSL(Math.random(), 0.8, 0.6).getHex())
+}
+
+function summonFairyEffect(event) {
+  const locked = getIsLocked()
+  const hit = getGroundPoint(event, locked)
+  if (hit) {
+    spawnFairy(hit.x, hit.y + 0.5, hit.z)
+    createCaptureEffect(hit, 0xffffff)
+  } else {
+    // Just in front of camera
+    const dir = new THREE.Vector3()
+    camera.getWorldDirection(dir)
+    const pos = camera.position.clone().addScaledVector(dir, 4)
+    spawnFairy(pos.x, pos.y, pos.z)
+    createCaptureEffect(pos, 0xffffff)
+  }
+}
+
 function updateGuidePip(delta, elapsed) {
    if (!scene || !guidePip.value) return
    
@@ -607,7 +632,14 @@ function onCanvasClick(event) {
     const currentItem = inventory.value[selectedSlot.value]
     if (currentItem?.id === 'balloon_cannon') {
        shootBalloonCannon(event)
-    } else {
+    } else if (currentItem?.id === 'firework_launcher') {
+       shootFirework(event)
+    } else if (currentItem?.id === 'fairy_summoner') {
+       summonFairyEffect(event)
+    } else if (currentItem?.id === 'pokeball') {
+       throwPokeball(event)
+    } else if (!currentItem) {
+       // Default fallback if slot is empty
        throwPokeball(event)
     }
     return
