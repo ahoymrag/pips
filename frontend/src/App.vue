@@ -8,7 +8,8 @@ import ChatWindow from './components/ChatWindow.vue'
 import CouncilButton from './components/CouncilButton.vue'
 import NebulaIntro from './components/NebulaIntro.vue'
 import TerminalWindow from './components/TerminalWindow.vue'
-import { teleportNearTarget } from './three/camera.js'
+import { teleportNearTarget, getCamera } from './three/camera.js'
+import * as THREE from 'three'
 
 const controlsPanelEl = ref(null)
 const insightsPanelEl = ref(null)
@@ -72,6 +73,7 @@ const {
   toggleTerminal,
   nearbyPip,
   hydratePip,
+  floatingTexts,
 } = useScene()
 const chatWindow = ref(null)
 const introVisible = ref(true)
@@ -197,6 +199,29 @@ function mapPercentX(x) {
 function mapPercentY(z) {
   return ((z + WORLD_HALF) / WORLD_SIZE) * 100
 }
+
+function setPlayerPosition(x, z) {
+  playerPosition.value = { x, z }
+}
+
+const floatingTextsWithScreenPos = computed(() => {
+  const camera = getCamera()
+  if (!camera || !floatingTexts.value.length) return []
+  
+  return floatingTexts.value.map(t => {
+    const vec = new THREE.Vector3(t.x, 0.95, t.z)
+    vec.project(camera)
+    
+    // Check if in front of camera
+    if (vec.z > 1) return null
+    
+    return {
+      ...t,
+      left: (vec.x * 0.5 + 0.5) * 100,
+      top: (-vec.y * 0.5 + 0.5) * 100,
+    }
+  }).filter(t => t !== null)
+})
 </script>
 
 <template>
@@ -206,7 +231,19 @@ function mapPercentY(z) {
   <CouncilButton />
   <TerminalWindow />
 
-  <div class="crosshair"></div>
+  <div class="crosshair" :class="{ active: !!nearbyPip }"></div>
+
+  <!-- Floating Texts -->
+  <div class="floating-container">
+    <div 
+      v-for="t in floatingTextsWithScreenPos" 
+      :key="t.id" 
+      class="floating-text"
+      :style="{ left: t.left + '%', top: t.top + '%', color: t.color }"
+    >
+      {{ t.text }}
+    </div>
+  </div>
 
   <!-- Interaction Prompt -->
   <div v-if="nearbyPip" class="interaction-prompt">

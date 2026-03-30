@@ -31,6 +31,7 @@ const wildPips = ref([])
 const terminalOpen = ref(false)
 const onboardingStep = ref(0) // 0: Start, 1: Shrinking, 2: Tour, 3: Arrival, 4: Fed, 5: Done
 const guidePip = ref({ id: 'guide', name: 'Nebula', color: '#c9a0ff', x: 13.5, z: 13.5, size: 5, targetX: 13.5, targetZ: 13.5 })
+const floatingTexts = ref([])
 
 let nextFarmPipId = 1000
 const gladeSlots = ref(seedGlades())
@@ -426,6 +427,10 @@ export function useScene() {
       p.hunger = Math.min(100, (p.hunger || 0) + 40)
       p.emotionalBond = Math.min(100, (p.emotionalBond || 0) + 5)
       pips.value[idx] = p
+      
+      triggerInteractionText(p.position_x, p.position_z, '+35 XP', '#ffd700')
+      setTimeout(() => triggerInteractionText(p.position_x, p.position_z, '+5 Bond', '#ff8ebc'), 200)
+
       if (onboardingStep.value === 3) onboardingStep.value = 4
       return true
     }
@@ -440,9 +445,21 @@ export function useScene() {
       p.thirst = Math.min(100, (p.thirst || 0) + 40)
       p.emotionalBond = Math.min(100, (p.emotionalBond || 0) + 3)
       pips.value[idx] = p
+
+      triggerInteractionText(p.position_x, p.position_z, '+25 XP', '#ffd700')
+      setTimeout(() => triggerInteractionText(p.position_x, p.position_z, '+3 Bond', '#ff8ebc'), 200)
+
       return true
     }
     return false
+  }
+
+  function triggerInteractionText(x, z, text, color) {
+    const id = 'text-' + Date.now() + Math.random()
+    floatingTexts.value.push({ id, x, z, text, color })
+    setTimeout(() => {
+      floatingTexts.value = floatingTexts.value.filter(t => t.id !== id)
+    }, 1500)
   }
 
   function removePip(pipId) {
@@ -522,6 +539,7 @@ export function useScene() {
     feedPip,
     hydratePip,
     nearbyPip,
+    floatingTexts,
     nextOnboarding,
     removePip,
     removeFarmBlock,
