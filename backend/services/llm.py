@@ -5,6 +5,75 @@ import httpx
 from config import settings
 from models import Message, Pip
 
+async def test_connection(provider: str, model: str | None = None) -> tuple[bool, str | None]:
+    """Lightweight connectivity check for provider+model.
+
+    Returns (ok, error). Designed for UX ceremonies; does NOT mutate state.
+    """
+    provider = (provider or "").lower()
+    model = model or settings.LLM_MODEL
+
+    try:
+        if provider == "openai":
+            api_key = settings.LLM_API_KEY
+            if not api_key:
+                return False, "Missing LLM_API_KEY (OpenAI)"
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                resp = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model,
+                        "messages": [{"role": "user", "content": "ping"}],
+                        "max_tokens": 1,
+                    },
+                )
+                resp.raise_for_status()
+            return True, None
+
+        if provider == "anthropic":
+            api_key = settings.LLM_API_KEY
+            if not api_key:
+                return False, "Missing LLM_API_KEY (Anthropic)"
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                resp = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": model,
+                        "system": "You are a connection test. Reply with a single character.",
+                        "messages": [{"role": "user", "content": "ping"}],
+                        "max_tokens": 1,
+                    },
+                )
+                resp.raise_for_status()
+            return True, None
+
+        if provider == "ollama":
+            # Just check local endpoint is responding.
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(
+                    "http://localhost:11434/api/chat",
+                    json={
+                        "model": model,
+                        "messages": [{"role": "user", "content": "ping"}],
+                        "stream": False,
+                    },
+                )
+                resp.raise_for_status()
+            return True, None
+
+        return False, f"Unknown provider: {provider}"
+    except Exception as exc:
+        return False, str(exc)
+
 
 async def complete(pip: Pip, messages: list[Message]) -> str:
     """Call the appropriate LLM provider and return the assistant response text."""

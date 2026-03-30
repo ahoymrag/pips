@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from config import settings
 from routers.agents import router as agents_router
 from routers.council import router as council_router
+from routers.integrations import router as integrations_router
 
 app = FastAPI(title="The Glade - AI Agent Playground", version="0.1.0")
 
@@ -18,6 +19,7 @@ app.add_middleware(
 
 app.include_router(agents_router)
 app.include_router(council_router)
+app.include_router(integrations_router)
 
 
 @app.get("/health")

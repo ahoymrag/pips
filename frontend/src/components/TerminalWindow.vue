@@ -24,6 +24,8 @@ const {
   hydratePip,
   equipHat,
   setMode,
+  showToast,
+  triggerFxPulse,
 } = useScene()
 
 const userInput = ref('')
@@ -83,6 +85,8 @@ async function handleCommand() {
     switch ((name || '').toLowerCase()) {
       case 'agents':
         return 'agents [--json]  - List all pips across all glades (use --json for copy/paste)'
+      case 'ceremony':
+        return 'ceremony [claude|openai|ollama]  - Run a funny connection ritual + real integration test'
       case 'select':
         return 'select [pip_id]  - Select a pip (opens overlay target)'
       case 'talk':
@@ -114,6 +118,7 @@ async function handleCommand() {
         terminalHistory.value.push({ type: 'system', content: 'Available commands:' })
         terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('ls') })
         terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('agents') })
+        terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('ceremony') })
         terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('select') })
         terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('talk') })
         terminalHistory.value.push({ type: 'system', content: '  ' + helpFor('feed') })
@@ -133,6 +138,76 @@ async function handleCommand() {
         terminalHistory.value.push({ type: 'system', content: '  exit               - Close terminal' })
       }
       break
+
+    case 'ceremony': {
+      const target = (args[0] || 'claude').toLowerCase()
+      const provider = target === 'claude' ? 'anthropic' : target
+      const model =
+        provider === 'anthropic'
+          ? 'claude-3-haiku-20240307'
+          : provider === 'openai'
+            ? 'gpt-4o-mini'
+            : provider === 'ollama'
+              ? 'llama3'
+              : null
+
+      if (!model) {
+        terminalHistory.value.push({ type: 'error', content: `Unknown ceremony target: ${escapeHtml(target)} (try: ceremony claude)` })
+        break
+      }
+
+      terminalHistory.value.push({ type: 'system', content: ':: BEGIN RITUAL ::' })
+      terminalHistory.value.push({ type: 'system', content: 'You place a tiny candle on the keyboard. The keys glow softly.' })
+      terminalHistory.value.push({ type: 'system', content: 'Step 1/3: Whisper the sacred env var into existence:' })
+      terminalHistory.value.push({ type: 'system', content: '  LLM_API_KEY=******** (set this in your backend .env / environment)' })
+      terminalHistory.value.push({ type: 'system', content: 'Step 2/3: Offer a single token to the void...' })
+      scrollToBottom()
+
+      // Real connectivity test (backend)
+      let data = null
+      try {
+        const resp = await fetch('/api/integrations/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider, model }),
+        })
+        data = await resp.json()
+      } catch (e) {
+        data = { ok: false, error: String(e) }
+      }
+
+      if (!data?.ok) {
+        terminalHistory.value.push({ type: 'error', content: 'The portal fizzles. The air smells like unconfigured secrets.' })
+        terminalHistory.value.push({ type: 'error', content: `Test failed: ${escapeHtml(data?.error || 'Unknown error')}` })
+        terminalHistory.value.push({ type: 'system', content: 'Tip: set backend env `LLM_API_KEY`, restart backend, then re-run `ceremony claude`.' })
+        break
+      }
+
+      terminalHistory.value.push({ type: 'assistant', content: `A sigil appears: ${provider.toUpperCase()} · ${escapeHtml(model)}` })
+      terminalHistory.value.push({ type: 'system', content: 'Step 3/3: The Glade accepts the pact. A new sprout-agent emerges.' })
+
+      // Celebrate in UI (toast + pulse)
+      showToast(`${provider === 'anthropic' ? 'Claude' : provider} connected`)
+      triggerFxPulse()
+
+      // Spawn a special pip in the current district (local world)
+      if (activeGlade.value) {
+        const name = provider === 'anthropic' ? 'Claude Sprout' : `${provider} Sprout`
+        createPip(
+          name,
+          '#d185ff',
+          activeGlade.value.center.x + (Math.random() - 0.5) * 4,
+          activeGlade.value.center.z + (Math.random() - 0.5) * 4,
+          'Summoned by ceremony. Polite. Slightly dramatic. Extremely helpful.',
+          activeGlade.value.id,
+          provider,
+          model
+        )
+      }
+
+      terminalHistory.value.push({ type: 'system', content: ':: RITUAL COMPLETE ::' })
+      break
+    }
 
     case 'ls':
       const localPips = pips.value.filter(p => p.gladeId === activeGlade.value?.id)
@@ -413,7 +488,7 @@ function onInputKeydown(event) {
 
 async function callClaude(prompt) {
   try {
-    const response = await fetch('http://localhost:8000/api/agents/terminal-agent/chat', {
+    const response = await fetch('/api/agents/terminal-agent/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: prompt })
