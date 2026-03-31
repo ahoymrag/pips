@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useScene } from './composables/useScene.js'
 import { useDraggable } from './composables/useDraggable.js'
 import GladeCanvas from './components/GladeCanvas.vue'
