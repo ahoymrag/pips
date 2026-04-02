@@ -478,6 +478,11 @@ export function useScene() {
       p.emotionalBond = Math.min(100, (p.emotionalBond || 0) + 5)
       pips.value[idx] = p
       
+      // Increment brick count for building pyramids
+      p.brickCount = (p.brickCount || 0) + 1
+      p.isBuilding = true
+      setTimeout(() => { p.isBuilding = false }, 5000) // Reset building status after animation
+
       triggerInteractionText(p.position_x, p.position_z, '+35 XP', '#ffd700')
       setTimeout(() => triggerInteractionText(p.position_x, p.position_z, '+5 Bond', '#ff8ebc'), 200)
       setTimeout(() => grantSmallGift(p, 'feed'), 350)
@@ -500,6 +505,11 @@ export function useScene() {
       p.thirst = Math.min(100, (p.thirst || 0) + 40)
       p.emotionalBond = Math.min(100, (p.emotionalBond || 0) + 3)
       pips.value[idx] = p
+
+      // Increment brick count for building pyramids
+      p.brickCount = (p.brickCount || 0) + 1
+      p.isBuilding = true
+      setTimeout(() => { p.isBuilding = false }, 5000)
 
       triggerInteractionText(p.position_x, p.position_z, '+25 XP', '#ffd700')
       setTimeout(() => triggerInteractionText(p.position_x, p.position_z, '+3 Bond', '#ff8ebc'), 200)
@@ -684,6 +694,8 @@ function makePip(name, color, x, z, personality, gladeId, provider = 'glade', mo
     emotionalBond: Math.floor(Math.random() * 20),
     level: 1,
     exp: 0,
+    brickCount: 0,
+    isBuilding: false,
   }
 }
 

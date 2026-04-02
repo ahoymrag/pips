@@ -5,7 +5,7 @@ import { useApi } from '../composables/useApi.js'
 import { useWebSocket } from '../composables/useWebSocket.js'
 import { useDraggable } from '../composables/useDraggable.js'
 
-const { selectedPip, councilActive, chatOpen, addPipExp } = useScene()
+const { selectedPip, councilActive, chatOpen, pips, addPipExp } = useScene()
 const { chatWithPip } = useApi()
 const { messages: wsMessages } = useWebSocket()
 
@@ -66,6 +66,16 @@ async function sendMessage() {
   } finally {
     sending.value = false
     const leveledUp = addPipExp(pipId, 25)
+    
+    // Increment brick count for building pyramids
+    const idx = pips.value.findIndex(p => p.id === pipId)
+    if (idx !== -1) {
+      const p = pips.value[idx]
+      p.brickCount = (p.brickCount || 0) + 1
+      p.isBuilding = true
+      setTimeout(() => { p.isBuilding = false }, 5000)
+    }
+
     if (leveledUp) {
       chatMessages.value.push({
         role: 'pip',

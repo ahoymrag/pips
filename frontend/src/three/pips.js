@@ -12,6 +12,34 @@ export function getPipMeshMap() {
   return pipMeshMap
 }
 
+const brickGeo = new THREE.BoxGeometry(0.14, 0.1, 0.14)
+const brickMat = new THREE.MeshLambertMaterial({ 
+    color: 0xfff4d1,
+    emissive: 0xffe0a0,
+    emissiveIntensity: 0.1
+})
+
+function getPyramidPosition(index) {
+    let layer = 0
+    let countInLayers = 0
+    let size = 6 // Base size for tiny pyramids
+    
+    while (size > 0) {
+        const layerCount = size * size
+        if (index < countInLayers + layerCount) {
+            const idxInLayer = index - countInLayers
+            const x = (idxInLayer % size) - (size - 1) / 2
+            const z = Math.floor(idxInLayer / size) - (size - 1) / 2
+            return new THREE.Vector3(x * 0.15, layer * 0.11, z * 0.15)
+        }
+        countInLayers += layerCount
+        layer++
+        size--
+    }
+    // Beyond base pyramid, build a spire
+    return new THREE.Vector3(0, (layer + (index - countInLayers)) * 0.11, 0)
+}
+
 export function createPipMeshes(pips, scene) {
   pips.forEach((pip, index) => {
     if (pipMeshMap.has(pip.id)) return
@@ -26,6 +54,9 @@ export function syncPipMeshes(pips, scene) {
 
   for (const [id, group] of pipMeshMap) {
     if (!currentIds.has(id)) {
+      if (group.userData.pyramidGroup) {
+        scene.remove(group.userData.pyramidGroup)
+      }
       scene.remove(group)
       pipMeshMap.delete(id)
     }
@@ -43,6 +74,11 @@ export function syncPipMeshes(pips, scene) {
       mesh.userData.baseX = pip.position_x
       mesh.userData.baseZ = pip.position_z
     }
+    mesh.userData.isBuilding = pip.isBuilding
+    mesh.userData.brickCount = pip.brickCount || 0
+
+    // Update pyramid
+    updatePyramid(mesh, mesh.userData.brickCount, scene)
     
     // Sync hat
     if (mesh.userData.currentHatId !== pip.hat) {
@@ -99,17 +135,70 @@ export function updatePipEyeTracking(camera) {
   }
 }
 
+
+function updatePyramid(group, brickCount, scene) {
+  if (!group.userData.pyramidGroup) {
+    const pGroup = new THREE.Group()
+    // Position pyramid slightly offset from pip
+    pGroup.position.set(group.userData.baseX + 1.2, 0.05, group.userData.baseZ + 1.2)
+    // Random rotation for natural feel
+    pGroup.rotation.y = Math.random() * Math.PI
+    scene.add(pGroup)
+    group.userData.pyramidGroup = pGroup
+    group.userData.bricks = []
+  }
+
+  const pGroup = group.userData.pyramidGroup
+  const bricks = group.userData.bricks
+
+  if (bricks.length < brickCount) {
+    for (let i = bricks.length; i < brickCount; i++) {
+        const pos = getPyramidPosition(i)
+        const brick = new THREE.Mesh(brickGeo, brickMat)
+        brick.position.copy(pos)
+        brick.scale.setScalar(0.001)
+        pGroup.add(brick)
+        bricks.push(brick)
+        brick.userData.targetScale = 1
+    }
+  }
+}
+
 export function updatePipAnimations(time) {
   const now = performance.now() / 1000
   let i = 0
   for (const [, group] of pipMeshMap) {
     // Gentle floating bob - very soft and dreamy
     const bob = Math.sin(time * 1.5 + i * 1.3) * 0.08
-    group.position.y = group.userData.baseY + bob
+    const basePos = new THREE.Vector3(group.userData.baseX, group.userData.baseY, group.userData.baseZ)
+    
+    // Building animation
+    if (group.userData.isBuilding) {
+        const pGroup = group.userData.pyramidGroup
+        if (pGroup) {
+            const dir = new THREE.Vector3().subVectors(pGroup.position, basePos).normalize()
+            const buildT = (Math.sin(time * 8) * 0.5 + 0.5)
+            const targetPos = basePos.clone().addScaledVector(dir, 0.6 * buildT)
+            group.position.lerp(targetPos, 0.2)
+            group.rotation.x = -0.4 * buildT
+        }
+    } else {
+        group.position.lerp(new THREE.Vector3(basePos.x, basePos.y + bob, basePos.z), 0.1)
+        group.rotation.x = THREE.MathUtils.lerp(group.rotation.x, 0, 0.1)
+    }
 
     // Soft swaying
     group.rotation.y = Math.sin(time * 0.6 + i * 2.1) * 0.08
     group.rotation.z = Math.sin(time * 0.8 + i * 1.7) * 0.02
+
+    // Update bricks pop-in
+    if (group.userData.bricks) {
+        group.userData.bricks.forEach(b => {
+            if (b.scale.x < 1) {
+                b.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1)
+            }
+        })
+    }
 
     // Animate blush opacity subtly
     const blushes = group.userData.blushes

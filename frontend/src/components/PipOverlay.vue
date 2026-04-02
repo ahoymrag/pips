@@ -101,6 +101,15 @@ watch(
         <div style="height: 4px; width: 100%; background: rgba(255,100,150,0.1); border-radius: 2px; overflow: hidden;">
           <div :style="{ width: `${selectedPip.emotionalBond || 0}%`, height: '100%', background: 'linear-gradient(90deg, #ff758c 0%, #ff7eb3 100%)' }"></div>
         </div>
+
+        <!-- Pyramid Bricks Progress -->
+        <div style="display: flex; justify-content: space-between; font-size: 10px; opacity: 0.8; margin-top: 2px;">
+          <span>Pyramid Built</span>
+          <span style="color: #ffd700;">🧱 {{ selectedPip.brickCount || 0 }}</span>
+        </div>
+        <div style="height: 2px; width: 100%; background: rgba(255,215,0,0.1); border-radius: 1px; overflow: hidden; margin-top: 2px;">
+          <div :style="{ width: `${Math.min(100, (selectedPip.brickCount || 0) * 2)}%`, height: '100%', background: '#ffd700' }"></div>
+        </div>
       </div>
     </div>
 
